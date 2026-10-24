@@ -218,3 +218,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- CodeClass (Next.js / Supabase) ---
+node_modules/
+.next/
+out/
+.netlify/
+.env*
+!.env.example
+test-results/
+playwright-report/
+.superpowers/
+.remember/
