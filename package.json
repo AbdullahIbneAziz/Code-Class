@@ -11,7 +11,7 @@
     "test:db": "vitest run tests/db",
     "test:api": "vitest run tests/api",
     "test:e2e": "playwright test",
-    "db:push": "dotenv -e .env.local -- sh -c \"supabase db push --db-url \\\"$DATABASE_URL\\\"\"",
+    "db:push": "tsx scripts/db-push.ts",
     "phase0": "tsx scripts/phase0-login-proof.ts",
     "create-teacher": "tsx scripts/create-teacher.ts"
   },
