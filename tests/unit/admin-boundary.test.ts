@@ -50,4 +50,24 @@ describe("admin client import boundary", () => {
     const src = fs.readFileSync(ADMIN_FILE, "utf8");
     expect(src).toContain("import 'server-only'");
   });
+
+  it("admin-client.ts is imported only by src/actions/teacher-students.ts", () => {
+    const target = path.join(ROOT, "src/lib/accounts/admin-client");
+    const importers = [...walk(path.join(ROOT, "src"), [".ts", ".tsx"]), ...walk(path.join(ROOT, "scripts"), [".ts"])]
+      .filter((f) => {
+        const specs = [...fs.readFileSync(f, "utf8").matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)].map((m) => m[1]);
+        return specs.some(
+          (spec) =>
+            spec === "@/lib/accounts/admin-client" ||
+            (spec.startsWith(".") && path.resolve(path.dirname(f), spec) === target),
+        );
+      })
+      .map((f) => path.relative(ROOT, f).split(path.sep).join("/"));
+    expect(importers).toEqual(["src/actions/teacher-students.ts"]);
+  });
+
+  it("admin-client.ts is server-only", () => {
+    const src = fs.readFileSync(path.join(ROOT, "src/lib/accounts/admin-client.ts"), "utf8");
+    expect(src).toContain("import 'server-only'");
+  });
 });

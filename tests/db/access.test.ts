@@ -231,4 +231,19 @@ describe("grants and RLS", () => {
       );
       expect(views.rows, "views without security_invoker").toEqual([]);
     }));
+
+  it("student cannot see assignment_students rows of a hidden homework", () =>
+    withTx(async (c) => {
+      const t = await seedUser(c, { role: "teacher", username: "t_teacher" });
+      const s = await seedUser(c, { role: "student", username: "t_a" });
+      const a = await seedAssignment(c, {
+        visible_from: new Date(Date.now() + 3600e3).toISOString(),
+        opens_at: new Date(Date.now() + 7200e3).toISOString(),
+      });
+      await assign(c, a, s);
+      await actAs(c, s);
+      expect((await c.query("select 1 from public.assignment_students where assignment_id = $1", [a])).rows).toHaveLength(0);
+      await actAs(c, t);
+      expect((await c.query("select 1 from public.assignment_students where assignment_id = $1", [a])).rows).toHaveLength(1);
+    }), 90_000);
 });

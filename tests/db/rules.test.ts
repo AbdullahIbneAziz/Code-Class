@@ -460,4 +460,14 @@ describe("touch_last_seen", () => {
       expect(b.rows[0].last_seen_at).toBeNull();
     });
   });
+
+  it("can_read_question uses can_see_assignment (single source)", () =>
+    withTx(async (c) => {
+      const r = await c.query(
+        "select pg_get_functiondef('public.can_read_question(uuid)'::regprocedure) as d",
+      );
+      const def = r.rows[0].d as string;
+      expect(def).toContain("can_see_assignment");
+      expect(def).not.toContain("visible_from");
+    }));
 });

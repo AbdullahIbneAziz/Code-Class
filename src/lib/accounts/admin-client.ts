@@ -1,3 +1,4 @@
+import 'server-only'
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
