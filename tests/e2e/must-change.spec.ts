@@ -48,6 +48,10 @@ test("deactivated user is signed out and sent to /login", async ({ page }) => {
   await expectPath(page, "/");
   const { error } = await adminClient().from("profiles").update({ is_active: false }).eq("id", u.id);
   expect(error).toBeNull();
+  // The signing-out redirect clears auth cookies, so it must not be cacheable.
+  const raw = await page.context().request.get("/", { maxRedirects: 0 });
+  expect(raw.status()).toBe(307);
+  expect(raw.headers()["cache-control"]).toContain("no-store");
   await page.goto("/");
   await expectPath(page, "/login");
   await page.goto("/");

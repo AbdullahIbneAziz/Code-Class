@@ -111,7 +111,7 @@ Supabase Auth only logs people in with an **email or phone number**, not a bare 
 
   - These are **not real inboxes** and are **never used for email**. The teacher shares logins and updates with families over **WhatsApp**.
   - **The platform never sends any email** (§2.2). This matters because `email.com` is a real provider, so a sent email could reach a stranger.
-  - The domain (`email.com`) is a single setting (`LOGIN_EMAIL_DOMAIN`), not hard-coded. If Supabase refuses it in the Phase 0 proof, or it ever needs changing, only that setting and the stored addresses change, and usernames stay the same.
+  - The domain (`email.com`) is a single setting (`NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN`), not hard-coded. If Supabase refuses it in the Phase 0 proof, or it ever needs changing, only that setting and the stored addresses change, and usernames stay the same.
   - **Nobody but the teacher ever sees or types these addresses.**
   - **Proved before any build work** (Phase 0, §16): on a throwaway Supabase project, create a user with this address, sign in, rename the username, and reset the password. If any step fails, we stop and choose again.
 - **Logging in:** the student types `ayaan` and a password. The login page turns that into the internal address and logs in through Supabase Auth **directly from the browser**. Usernames aren't secret, so no lookup table or server endpoint is needed.

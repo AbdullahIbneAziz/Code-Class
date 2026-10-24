@@ -10,7 +10,7 @@ Design: see [ARCHITECTURE.md](ARCHITECTURE.md).
 2. Copy `.env.example` to `.env.local` and fill in the values (never commit `.env.local`).
 3. `npm run phase0` verifies username login against the Supabase project.
 
-Login email is `${username}@${LOGIN_EMAIL_DOMAIN}` (default `email.com`).
+Login email is `${username}@${NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN}` (default `email.com`).
 
 ## Scripts
 

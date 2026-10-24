@@ -1,6 +1,6 @@
 /**
  * Phase 0: prove username login works on the live dev Supabase project.
- * Login email = `${username}@${LOGIN_EMAIL_DOMAIN}`.
+ * Login email = `${username}@${NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN}`.
  * This is the ONLY file allowed to call auth.signUp (to verify sign-ups are disabled).
  */
 import { config } from "dotenv";
@@ -12,7 +12,7 @@ config({ path: ".env.local", quiet: true });
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const domain = process.env.LOGIN_EMAIL_DOMAIN || "email.com";
+const domain = process.env.NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN || "email.com";
 
 if (!url || !anonKey || !serviceKey) {
   console.error("Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY in .env.local");

@@ -6,13 +6,16 @@ type CookieToSet = { name: string; value: string; options?: Record<string, unkno
 // Next 16 renamed middleware.ts to proxy.ts (see node_modules/next/dist/docs).
 export async function proxy(request: NextRequest) {
   const pending: CookieToSet[] = [];
+  let cacheHeaders: Record<string, string> = {};
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll: () => request.cookies.getAll(),
-        setAll(list) {
+        setAll(list, headers) {
+          // Responses that set auth cookies must not be cached (see @supabase/ssr types).
+          cacheHeaders = { ...cacheHeaders, ...headers };
           for (const c of list) {
             request.cookies.set(c.name, c.value);
             pending.push(c);
@@ -27,6 +30,7 @@ export async function proxy(request: NextRequest) {
   // Every response (pass-through or redirect) carries any refreshed session cookies.
   const finish = (res: NextResponse) => {
     for (const c of pending) res.cookies.set(c.name, c.value, c.options);
+    for (const [k, v] of Object.entries(cacheHeaders)) res.headers.set(k, v);
     return res;
   };
   const go = (to: string) => finish(NextResponse.redirect(new URL(to, request.url)));
