@@ -30,7 +30,7 @@ export type TestUser = { id: string; username: string; password: string; client:
 
 export async function makeTestUser(
   role: "teacher" | "student",
-  o: { isActive?: boolean } = {},
+  o: { isActive?: boolean; mustChangePassword?: boolean } = {},
 ): Promise<TestUser> {
   const admin = adminClient();
   const username = `t_${role}_${randomBytes(3).toString("hex")}`;
@@ -49,7 +49,7 @@ export async function makeTestUser(
     username,
     display_name: `Test ${role}`,
     is_active: o.isActive ?? true,
-    must_change_password: false,
+    must_change_password: o.mustChangePassword ?? false,
   });
   if (pErr) throw new Error(`profile insert failed: ${pErr.message}`);
   const client = anonClient();

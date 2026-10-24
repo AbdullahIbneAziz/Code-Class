@@ -1,6 +1,10 @@
+import { config as loadEnv } from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
 
+loadEnv({ path: ".env.local", quiet: true });
+
 export default defineConfig({
+  workers: 1,
   testDir: "./tests/e2e",
   outputDir: "./test-results",
   reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
