@@ -45,6 +45,7 @@ Useful commands:
 | `npm run db:push` | Apply database migrations to Supabase |
 | `npm run phase0` | Check that username login works against Supabase |
 | `npm run create-teacher` | Create the teacher account |
+| `npm run reset-teacher-password` | Set a new temporary password for the teacher |
 
 ## Create the teacher account
 
@@ -67,10 +68,13 @@ Log in, then open **Students** (`/teacher/students`).
 
 ## I forgot my own password
 
-1. Go to supabase.com and open the CodeClass project.
-2. Choose **Authentication → Users**.
-3. Find your user (your username followed by the fake email ending, for example `miraz@...`), open it, and set a new password. Do not use "Send password recovery": no emails are sent in this project.
-4. Log in to the site with that password. You will be asked to choose a new one straight away.
+The Supabase dashboard cannot set a password for you here: no emails are sent in this project (your login address, `miraz@email.com`, is not a real mailbox). Use the reset script instead. It runs on your own computer, which holds `.env.local` with the admin key:
+
+```
+npm run -s reset-teacher-password -- --username miraz --password <temp>
+```
+
+Replace `<temp>` with a temporary password of at least 8 characters (the `-s` flag stops npm from printing it back). The script only needs the username `miraz`. It works for the teacher account only. Then log in with the temporary password: you will be asked to choose a new one straight away.
 
 ## Supabase project paused
 

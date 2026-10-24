@@ -13,7 +13,8 @@
     "test:e2e": "playwright test",
     "db:push": "tsx scripts/db-push.ts",
     "phase0": "tsx scripts/phase0-login-proof.ts",
-    "create-teacher": "tsx scripts/create-teacher.ts"
+    "create-teacher": "tsx scripts/create-teacher.ts",
+    "reset-teacher-password": "tsx scripts/reset-teacher-password.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
