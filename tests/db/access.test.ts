@@ -59,10 +59,10 @@ describe("grants and RLS", () => {
   it("teacher sees all profiles", () =>
     withTx(async (c) => {
       const t = await seedUser(c, { role: "teacher", username: "t_teacher" });
-      await seedUser(c, { role: "student", username: "t_a" });
-      await seedUser(c, { role: "student", username: "t_b" });
+      const a = await seedUser(c, { role: "student", username: "t_a" });
+      const b = await seedUser(c, { role: "student", username: "t_b" });
       await actAs(c, t);
-      const r = await c.query("select id from public.profiles where username like 't\\_%'");
+      const r = await c.query("select id from public.profiles where id = any($1)", [[t, a, b]]);
       expect(r.rows).toHaveLength(3);
     }));
 
@@ -192,5 +192,43 @@ describe("grants and RLS", () => {
          where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')`,
       );
       expect(r.rows).toEqual([]);
+    }));
+
+  it("whole-schema guard: RLS on, no anon access, no authenticated DML, views are security_invoker", () =>
+    withTx(async (c) => {
+      const noRls = await c.query(
+        `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+         where n.nspname = 'public' and c.relkind in ('r', 'p') and not c.relrowsecurity`,
+      );
+      expect(noRls.rows, "tables without RLS").toEqual([]);
+
+      const anon = await c.query(
+        `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+         where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm')
+           and (has_table_privilege('anon', c.oid, 'select, insert, update, delete, truncate, references, trigger')
+                or has_any_column_privilege('anon', c.oid, 'select, insert, update, references'))`,
+      );
+      expect(anon.rows, "anon privileges").toEqual([]);
+
+      const dml = await c.query(
+        `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+         where n.nspname = 'public' and c.relkind in ('r', 'p')
+           and (has_table_privilege('authenticated', c.oid, 'insert, update, delete, truncate')
+                or has_any_column_privilege('authenticated', c.oid, 'insert, update'))`,
+      );
+      expect(dml.rows, "authenticated DML").toEqual([]);
+
+      const fns = await c.query(
+        `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')`,
+      );
+      expect(fns.rows, "anon-executable functions").toEqual([]);
+
+      const views = await c.query(
+        `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+         where n.nspname = 'public' and c.relkind = 'v'
+           and not coalesce('security_invoker=true' = any(c.reloptions) or 'security_invoker=on' = any(c.reloptions), false)`,
+      );
+      expect(views.rows, "views without security_invoker").toEqual([]);
     }));
 });
