@@ -20,7 +20,7 @@
 
 - Supabase region: **London (eu-west-2)**. Free plan only. Two projects at most: `codeclass-dev` (Phase 0, development and tests) and `codeclass-prod` (created in Phase 6).
 - Supabase Auth settings: **Allow new users to sign up = OFF**, **Confirm email = OFF**, **Secure password change = OFF**, **no custom SMTP**, ever.
-- Login address = `` `${username}@${LOGIN_EMAIL_DOMAIN}` ``, with `LOGIN_EMAIL_DOMAIN` defaulting to `email.com`. Usernames: lowercase, `^[a-z][a-z0-9_]{2,19}$`.
+- Login address = `` `${username}@${NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN}` ``, with `NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN` defaulting to `email.com`. Usernames: lowercase, `^[a-z][a-z0-9_]{2,19}$`.
 - App code must never call `auth.signUp`, `auth.resetPasswordForEmail`, `auth.signInWithOtp`, or `auth.updateUser({ email })`.
 - Login error copy, exactly: **"Username or password is incorrect"**.
 - Password rule: at least **8** characters, and not equal to the current/temporary password.
@@ -68,7 +68,7 @@ scripts/
   create-teacher.ts
 src/
   lib/
-    config.ts                    reads env (LOGIN_EMAIL_DOMAIN etc.)
+    config.ts                    reads env (NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN etc.)
     auth/username.ts             normalizeUsername, isValidUsername, usernameToEmail
     auth/password.ts             validateNewPassword
     supabase/browser.ts          createBrowserSupabase()
@@ -102,10 +102,10 @@ tests/
 
 - [ ] **Step 1:** The teacher creates a free Supabase account and a project named `codeclass-dev`, region **London (eu-west-2)**, with a strong database password saved in their password manager.
 - [ ] **Step 2:** In **Authentication → Sign In / Providers**: Email provider ON; **Allow new users to sign up OFF**; **Confirm email OFF**; **Secure password change OFF**. In **Authentication → Emails → SMTP**: leave the built-in mailer (no custom SMTP).
-- [ ] **Step 3:** Copy into `I:\Programming Platform\.env.local` (never committed): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key), `SUPABASE_SERVICE_ROLE_KEY` (secret key), `DATABASE_URL` (Session pooler connection string), `LOGIN_EMAIL_DOMAIN=email.com`.
+- [ ] **Step 3:** Copy into `I:\Programming Platform\.env.local` (never committed): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key), `SUPABASE_SERVICE_ROLE_KEY` (secret key), `DATABASE_URL` (Session pooler connection string), `NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN=email.com`.
 - [ ] **Step 4:** The teacher creates a free GitHub account (if needed) and an empty **private** repository `codeclass`, and a free Netlify account. These are used in Task 12.
 
-Verification: the agent runs `node -e "require('dotenv').config({path:'.env.local'}); console.log(['NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','DATABASE_URL','LOGIN_EMAIL_DOMAIN'].map(k=>k+':'+(process.env[k]?'set':'MISSING')).join('\n'))"` after Task 1 installs `dotenv`. Expected: all five `set`.
+Verification: the agent runs `node -e "require('dotenv').config({path:'.env.local'}); console.log(['NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','DATABASE_URL','NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN'].map(k=>k+':'+(process.env[k]?'set':'MISSING')).join('\n'))"` after Task 1 installs `dotenv`. Expected: all five `set`.
 
 ---
 
@@ -146,7 +146,7 @@ Phase 0 runs here because it needs only the scaffold and `supabase-js`. **If the
 
 **Interfaces:**
 - Produces:
-  - `getLoginEmailDomain(): string` (env `LOGIN_EMAIL_DOMAIN`, default `'email.com'`)
+  - `getLoginEmailDomain(): string` (env `NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN`, default `'email.com'`)
   - `normalizeUsername(raw: string): string` (trim, lowercase)
   - `isValidUsername(u: string): boolean` (regex `^[a-z][a-z0-9_]{2,19}$`, applied after normalizing)
   - `usernameToEmail(raw: string): string` → `` `${normalizeUsername(raw)}@${getLoginEmailDomain()}` ``
@@ -155,7 +155,7 @@ Phase 0 runs here because it needs only the scaffold and `supabase-js`. **If the
 - [ ] **Step 1: Write failing tests.**
   - `normalizeUsername(' Student1 ')` → `'student1'`
   - `isValidUsername('student2')` true; `'ab'` false; `'1abc'` false; `'a-b-c'` false; `'a'.repeat(21)` false
-  - `usernameToEmail(' Miraz')` → `'miraz@email.com'`; with `LOGIN_EMAIL_DOMAIN='example.org'` → `'miraz@example.org'`
+  - `usernameToEmail(' Miraz')` → `'miraz@email.com'`; with `NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN='example.org'` → `'miraz@example.org'`
   - `validateNewPassword('short', 'short', 'x')` → message `'Password must be at least 8 characters.'`
   - `validateNewPassword('abcdefgh', 'abcdefgX', 'x')` → `'The two new passwords don't match.'`
   - `validateNewPassword('Temp-pass-1', 'Temp-pass-1', 'Temp-pass-1')` → `'Choose a password different from your current one.'`
@@ -447,11 +447,11 @@ Constraints (§4.8): `max_marks > 0`; `mark >= 0`; trigger `submissions_mark_le_
 **Files:**
 - Create: `netlify.toml` (`[build] command = "npm run build"`, `publish = ".next"`; Netlify's Next.js runtime is detected automatically)
 - Modify: `README.md`
-- Test: `tests/e2e/login.spec.ts` run against the deployed URL (`BASE_URL` env in `playwright.config.ts`)
+- Test: `tests/e2e/login.spec.ts`, `tests/e2e/must-change.spec.ts` and `tests/e2e/students.spec.ts` run against the deployed URL (`BASE_URL` env in `playwright.config.ts`)
 
 - [ ] **Step 1:** Push `main` to the teacher's private GitHub repo `codeclass` (the teacher authorises `gh`/git credentials). Connect it in Netlify. Set environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (marked secret, scope: Functions/Runtime), `NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN` (not secret; set for build and runtime in all deploy contexts). In Supabase **Authentication → URL Configuration**, set Site URL to the Netlify URL.
 - [ ] **Step 2:** Create the dev teacher on `codeclass-dev`: `npm run create-teacher -- --username t_teacher --name "Test Teacher" --password <temp>` (the real `miraz` account goes on `codeclass-prod` in Phase 6).
-- [ ] **Step 3: Run** all three e2e specs against the deployed URL: `BASE_URL=https://<site>.netlify.app npm run test:e2e -- login must-change students` → PASS (with `BASE_URL` set, Playwright does not start the local server). Also verify on the deployed site: (a) a response that sets auth cookies (e.g. the login response or a sign-out) carries a `cache-control` header containing `no-store`; (b) the proxy runs on Netlify: a logged-out request to `/` returns a redirect to `/login` (`curl -sI https://<site>.netlify.app/`); (c) `Netlify-CDN-Cache-Control` does not cache personalised responses (no public/s-maxage value on authenticated pages). Manually: log in as `t_teacher` on the deployed site, change the password, create a test student, log in as that student in a private window, change the password, and see the student home.
+- [ ] **Step 3: Run** all three e2e specs against the deployed URL: `BASE_URL=https://<site>.netlify.app npm run test:e2e -- login must-change students` → PASS (with `BASE_URL` set, Playwright does not start the local server). Also verify on the deployed site: (a) a response that sets auth cookies (e.g. the login response or a sign-out) carries a `cache-control` header containing `no-store`; (b) the proxy runs on Netlify: a logged-out request to `/` returns a redirect to `/login` (`curl -sI https://<site>.netlify.app/`); `curl -sI https://codeclass-tuition.netlify.app/` shows X-Frame-Options, Content-Security-Policy (frame-ancestors) and Referrer-Policy on the 307 redirect; (c) `Netlify-CDN-Cache-Control` does not cache personalised responses (no public/s-maxage value on authenticated pages). Manually: log in as `t_teacher` on the deployed site, change the password, create a test student, log in as that student in a private window, change the password, and see the student home.
 - [ ] **Step 4:** In the Netlify dashboard, check **Usage**: record the credits used by this first deploy in the README's "Running costs" section (§15.2 monitoring baseline).
 - [ ] **Step 5: README** sections, written for the teacher: *What this is*; *Settings you need* (names from `.env.example`); *Run it on your computer*; *Create the teacher account*; *Add / reset / rename / deactivate a student*; *I forgot my own password* (supabase.com → Authentication → Users → set password, then log in and you'll be asked to choose a new one); *Supabase project paused* (supabase.com → project → Restore); *Deploying* (keep to about 10 deploys a month, §15.2); *Running costs* (baseline from Step 4).
 - [ ] **Step 6: Run** the full suite locally: `npm run lint && npm test && npm run test:db && npm run test:api && npm run test:e2e` → all PASS.

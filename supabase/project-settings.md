@@ -22,7 +22,8 @@ These are dashboard settings that migrations cannot set. Re-check them after any
 ## Auth values (config.toml mirrors these; the hosted dashboard must be set by hand)
 - Minimum password length: **8** (Authentication -> Sign In / Providers -> Password). `supabase/config.toml` sets 8; the teacher changes the hosted dashboard setting.
 - Session / JWT expiry: 3600 s (`jwt_expiry` in config.toml, the default).
-- Site URL and redirect URLs: TBD in Task 12: the Netlify URL.
+- Site URL: `https://codeclass-tuition.netlify.app` (Authentication -> URL Configuration).
+- Netlify site: `codeclass-tuition`, site id `86803e10-5330-4035-b6bf-71c6143d1064`.
 
 ## Environment variables
 | Name | Notes |
