@@ -1,0 +1,125 @@
+import { config } from "dotenv";
+import { randomBytes, randomUUID } from "node:crypto";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { usernameToEmail } from "@/lib/auth/username";
+
+config({ path: ".env.local", quiet: true });
+
+const URL_ = () => process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const ANON = () => process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const opts = { auth: { persistSession: false, autoRefreshToken: false } };
+
+// Test-only admin client (src/lib/supabase/admin.ts is server-only and cannot load under vitest).
+export function adminClient(): SupabaseClient {
+  return createClient(URL_(), process.env.SUPABASE_SERVICE_ROLE_KEY!, opts);
+}
+export function anonClient(): SupabaseClient {
+  return createClient(URL_(), ANON(), opts);
+}
+
+const createdUserIds: string[] = [];
+const createdAssignmentIds: string[] = [];
+const uploaded: { bucket: string; path: string }[] = [];
+
+/** Record an object path so cleanupTestUsers removes it (call BEFORE uploading). */
+export function trackObject(bucket: string, path: string): void {
+  uploaded.push({ bucket, path });
+}
+
+export type TestUser = { id: string; username: string; password: string; client: SupabaseClient };
+
+export async function makeTestUser(
+  role: "teacher" | "student",
+  o: { isActive?: boolean } = {},
+): Promise<TestUser> {
+  const admin = adminClient();
+  const username = `t_${role}_${randomBytes(3).toString("hex")}`;
+  const password = `Pw-${randomBytes(9).toString("hex")}`;
+  const { data, error } = await admin.auth.admin.createUser({
+    email: usernameToEmail(username),
+    password,
+    email_confirm: true,
+  });
+  if (error || !data.user) throw new Error(`createUser failed: ${error?.message}`);
+  const id = data.user.id;
+  createdUserIds.push(id);
+  const { error: pErr } = await admin.from("profiles").insert({
+    id,
+    role,
+    username,
+    display_name: `Test ${role}`,
+    is_active: o.isActive ?? true,
+    must_change_password: false,
+  });
+  if (pErr) throw new Error(`profile insert failed: ${pErr.message}`);
+  const client = anonClient();
+  const { error: sErr } = await client.auth.signInWithPassword({
+    email: usernameToEmail(username),
+    password,
+  });
+  if (sErr) throw new Error(`sign-in failed: ${sErr.message}`);
+  return { id, username, password, client };
+}
+
+const HOUR = 3_600_000;
+export async function adminSeedAssignment(
+  partial: Partial<{
+    kind: "homework" | "test";
+    title: string;
+    visible_from: string;
+    opens_at: string;
+    due_at: string;
+    max_marks: number;
+  }> = {},
+): Promise<string> {
+  const now = Date.now();
+  const row = {
+    kind: "homework",
+    title: "t_storage_test",
+    max_marks: 10,
+    visible_from: new Date(now - 3 * HOUR).toISOString(),
+    opens_at: new Date(now - 2 * HOUR).toISOString(),
+    due_at: new Date(now + 24 * HOUR).toISOString(),
+    ...partial,
+  };
+  const { data, error } = await adminClient().from("assignments").insert(row).select("id").single();
+  if (error) throw new Error(`seed assignment failed: ${error.message}`);
+  createdAssignmentIds.push(data.id);
+  return data.id as string;
+}
+
+export async function adminAssign(assignmentId: string, studentId: string): Promise<void> {
+  const { error } = await adminClient()
+    .from("assignment_students")
+    .insert({ assignment_id: assignmentId, student_id: studentId });
+  if (error) throw new Error(`assign failed: ${error.message}`);
+}
+
+export function fileOfSize(bytes: number): Blob {
+  return new Blob([new Uint8Array(bytes)], { type: "application/octet-stream" });
+}
+
+export const uuid = () => randomUUID();
+
+/** Deletes every storage object, assignment and Auth user created in this run. */
+export async function cleanupTestUsers(): Promise<void> {
+  const admin = adminClient();
+  const errors: string[] = [];
+  const byBucket = new Map<string, string[]>();
+  for (const o of uploaded) byBucket.set(o.bucket, [...(byBucket.get(o.bucket) ?? []), o.path]);
+  for (const [bucket, paths] of byBucket) {
+    const { error } = await admin.storage.from(bucket).remove(paths);
+    if (error) errors.push(`remove ${bucket}: ${error.message}`);
+  }
+  uploaded.length = 0;
+  if (createdAssignmentIds.length) {
+    const { error } = await admin.from("assignments").delete().in("id", createdAssignmentIds);
+    if (error) errors.push(`assignments: ${error.message}`);
+    createdAssignmentIds.length = 0;
+  }
+  for (const id of createdUserIds.splice(0)) {
+    const { error } = await admin.auth.admin.deleteUser(id);
+    if (error) errors.push(`deleteUser ${id}: ${error.message}`);
+  }
+  if (errors.length) throw new Error(`cleanup problems: ${errors.join("; ")}`);
+}
