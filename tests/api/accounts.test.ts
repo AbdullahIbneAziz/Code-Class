@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from "vitest";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { usernameToEmail } from "@/lib/auth/username";
 import {
   createStudent,
@@ -123,6 +123,25 @@ describe("account management", () => {
 
     expect(await setStudentActive(admin, id, true)).toEqual({ ok: true });
     expect((await login(username, "Temp-pass-1")).error).toBeNull();
+  });
+
+  it("student operations refuse the teacher's id and unknown ids, leaving the teacher untouched", async () => {
+    const teacher = await makeTestUser("teacher");
+    const ghost = randomUUID();
+    const notFound = { ok: false, message: "Student not found." };
+    for (const id of [teacher.id, ghost]) {
+      expect(await resetStudentPassword(admin, id, "Hijack-pass-9")).toEqual(notFound);
+      expect(await renameStudent(admin, id, `t_hijack_${suffix()}`)).toEqual(notFound);
+      expect(await setStudentActive(admin, id, false)).toEqual(notFound);
+    }
+    const { error } = await login(teacher.username, teacher.password);
+    expect(error).toBeNull();
+    const { data: p } = await admin.from("profiles").select("*").eq("id", teacher.id).single();
+    expect(p!.is_active).toBe(true);
+    expect(p!.username).toBe(teacher.username);
+    expect(p!.must_change_password).toBe(false);
+    const { data: u } = await admin.auth.admin.getUserById(teacher.id);
+    expect(u.user?.banned_until ?? null).toBeNull();
   });
 
   it("server actions reject a non-teacher caller", async () => {

@@ -21,6 +21,27 @@ async function usernameTaken(admin: SupabaseClient, username: string, exceptId?:
   return (data ?? []).some((r) => r.id !== exceptId);
 }
 
+const NOT_FOUND = "Student not found.";
+
+async function isStudent(admin: SupabaseClient, id: string): Promise<boolean> {
+  const { data } = await admin.from("profiles").select("role").eq("id", id).maybeSingle();
+  return data?.role === "student";
+}
+
+async function updateStudentProfile(
+  admin: SupabaseClient,
+  id: string,
+  patch: Record<string, unknown>,
+) {
+  const { data, error } = await admin
+    .from("profiles")
+    .update(patch)
+    .eq("id", id)
+    .eq("role", "student")
+    .select("id");
+  return { error, affected: data?.length ?? 0 };
+}
+
 export async function createStudent(
   admin: SupabaseClient,
   input: { username: string; displayName: string; tempPassword: string },
@@ -66,13 +87,11 @@ export async function resetStudentPassword(
   tempPassword: string,
 ): Promise<AccountResult> {
   if (tempPassword.length < 8) return fail(SHORT_PW);
+  if (!(await isStudent(admin, studentId))) return fail(NOT_FOUND);
   const { error } = await admin.auth.admin.updateUserById(studentId, { password: tempPassword });
   if (error) return fail("Could not reset the password. Please try again.");
-  const { error: pErr } = await admin
-    .from("profiles")
-    .update({ must_change_password: true })
-    .eq("id", studentId);
-  if (pErr) return fail("Could not reset the password. Please try again.");
+  const r = await updateStudentProfile(admin, studentId, { must_change_password: true });
+  if (r.error || r.affected !== 1) return fail("Could not reset the password. Please try again.");
   return { ok: true };
 }
 
@@ -85,10 +104,10 @@ export async function renameStudent(
   if (!isValidUsername(username)) return fail(INVALID_USERNAME);
   const { data: current } = await admin
     .from("profiles")
-    .select("username")
+    .select("username, role")
     .eq("id", studentId)
     .maybeSingle();
-  if (!current) return fail("Student not found.");
+  if (!current || current.role !== "student") return fail(NOT_FOUND);
   try {
     if (await usernameTaken(admin, username, studentId)) return fail(TAKEN);
   } catch {
@@ -99,7 +118,8 @@ export async function renameStudent(
     email_confirm: true,
   });
   if (error) return fail(isTakenAuthError(error) ? TAKEN : "Could not rename. Please try again.");
-  const { error: pErr } = await admin.from("profiles").update({ username }).eq("id", studentId);
+  const rr = await updateStudentProfile(admin, studentId, { username });
+  const pErr = rr.error ?? (rr.affected !== 1 ? { code: "" } : null);
   if (pErr) {
     if (current.username) {
       await admin.auth.admin.updateUserById(studentId, {
@@ -117,12 +137,13 @@ export async function setStudentActive(
   studentId: string,
   active: boolean,
 ): Promise<AccountResult> {
+  if (!(await isStudent(admin, studentId))) return fail(NOT_FOUND);
   const { error } = await admin.auth.admin.updateUserById(studentId, {
     ban_duration: active ? "none" : BAN_FOREVER,
   });
   if (error) return fail("Could not update the account. Please try again.");
-  const { error: pErr } = await admin.from("profiles").update({ is_active: active }).eq("id", studentId);
-  if (pErr) {
+  const ra = await updateStudentProfile(admin, studentId, { is_active: active });
+  if (ra.error || ra.affected !== 1) {
     // Keep the ban and the flag in step.
     await admin.auth.admin.updateUserById(studentId, { ban_duration: active ? BAN_FOREVER : "none" });
     return fail("Could not update the account. Please try again.");
