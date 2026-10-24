@@ -18,3 +18,17 @@ These are dashboard settings that migrations cannot set. Re-check them after any
 
 - Policies exist for SELECT and INSERT only. There are no UPDATE or DELETE policies; deletion is done by the admin-client clean-up.
 - The global storage upload limit (Project Settings -> Storage) must be at least 25 MB (free plan allows 50 MB).
+
+## Auth values (config.toml mirrors these; the hosted dashboard must be set by hand)
+- Minimum password length: **8** (Authentication -> Sign In / Providers -> Password). `supabase/config.toml` sets 8; the teacher changes the hosted dashboard setting.
+- Session / JWT expiry: 3600 s (`jwt_expiry` in config.toml, the default).
+- Site URL and redirect URLs: TBD in Task 12: the Netlify URL.
+
+## Environment variables
+| Name | Notes |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | public |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | public |
+| `SUPABASE_SERVICE_ROLE_KEY` | secret, runtime only |
+| `NEXT_PUBLIC_LOGIN_EMAIL_DOMAIN` | not secret; inlined at build time, so it must be set at **build time** (and runtime) on Netlify in all deploy contexts |
+| `DATABASE_URL` | local tests and `db:push` only, never on Netlify |
