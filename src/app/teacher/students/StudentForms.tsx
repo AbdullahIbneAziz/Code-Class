@@ -77,6 +77,8 @@ export function RowActions({ id, username, active }: { id: string; username: str
   const [toggle, toggleAction] = useActionState(setStudentActiveAction, null);
   // Confirmation is tied to the active state it was requested in, so it resets when the state flips.
   const [confirmFor, setConfirmFor] = useState<boolean | null>(null);
+  // The row stays mounted across Deactivate -> Reactivate, so clear any pending confirmation once inactive.
+  if (!active && confirmFor !== null) setConfirmFor(null);
   const confirming = confirmFor === active;
   const setConfirming = (v: boolean) => setConfirmFor(v ? active : null);
   return (

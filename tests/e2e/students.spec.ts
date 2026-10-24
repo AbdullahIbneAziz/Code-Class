@@ -49,4 +49,9 @@ test("teacher adds a student, sees the temp password once, and the student can l
   await row.getByRole("button", { name: "Deactivate" }).click();
   await row.getByRole("button", { name: "Confirm deactivate" }).click();
   await expect(row.getByRole("button", { name: "Reactivate" })).toBeVisible();
+
+  // Reactivating must not leave the deactivate confirmation armed.
+  await row.getByRole("button", { name: "Reactivate" }).click();
+  await expect(row.getByRole("button", { name: "Deactivate" })).toBeVisible();
+  await expect(row.getByRole("button", { name: "Confirm deactivate" })).toHaveCount(0);
 });
