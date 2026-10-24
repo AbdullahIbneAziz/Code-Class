@@ -152,6 +152,17 @@ describe("storage policies", () => {
     expect(up.error).not.toBeNull();
   });
 
+  it("deactivated student cannot read own submission", async () => {
+    const s3 = await makeTestUser("student");
+    await adminAssign(openHw, s3.id);
+    const p = subPath(openHw, s3.id);
+    expect((await put(s3, "submissions", p, fileOfSize(10))).error).toBeNull();
+    expect((await s3.client.storage.from("submissions").createSignedUrl(p, 60)).error).toBeNull();
+    const { error: dErr } = await adminClient().from("profiles").update({ is_active: false }).eq("id", s3.id);
+    expect(dErr).toBeNull();
+    expect((await s3.client.storage.from("submissions").createSignedUrl(p, 60)).error).not.toBeNull();
+  });
+
   it("signed URL expires after 60 seconds", { timeout: 90_000 }, async () => {
     const { data, error } = await s1.client.storage.from("submissions").createSignedUrl(ownPath, 60);
     expect(error).toBeNull();
