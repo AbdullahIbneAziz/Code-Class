@@ -41,6 +41,14 @@ test("page has no sign-up or forgot-password link", async ({ page }) => {
   await expect(page.getByText(/sign up/i)).toHaveCount(0);
 });
 
+test("login page carries security headers", async ({ page }) => {
+  const res = await page.goto("/login");
+  const h = res!.headers();
+  expect(h["x-frame-options"]).toBe("DENY");
+  expect(h["content-security-policy"]).toBe("frame-ancestors 'none'");
+  expect(h["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+});
+
 test("sign out returns to /login and / redirects to /login again", async ({ page }) => {
   const u = await makeTestUser("student");
   await loginVia(page, u.username, u.password);

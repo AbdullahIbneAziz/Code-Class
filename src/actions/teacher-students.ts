@@ -10,6 +10,7 @@ import {
   setStudentActive,
   type AccountResult,
 } from "@/lib/accounts/students";
+import { normalizeUsername } from "@/lib/auth/username";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 /** State returned to the forms. tempPassword is shown once and never stored or logged. */
@@ -40,7 +41,7 @@ export async function createStudentAction(_prev: ActionState, fd: FormData): Pro
     createStudent(getAdminClient(), { username, displayName: str(fd, "displayName"), tempPassword }),
   );
   return r.ok
-    ? { ok: true, tempPassword, username: username.trim().toLowerCase() }
+    ? { ok: true, tempPassword, username: normalizeUsername(username) }
     : { ok: false, message: r.message };
 }
 

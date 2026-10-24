@@ -75,6 +75,10 @@ export function RowActions({ id, username, active }: { id: string; username: str
   const [reset, resetAction] = useActionState(resetStudentPasswordAction, null);
   const [rename, renameAction] = useActionState(renameStudentAction, null);
   const [toggle, toggleAction] = useActionState(setStudentActiveAction, null);
+  // Confirmation is tied to the active state it was requested in, so it resets when the state flips.
+  const [confirmFor, setConfirmFor] = useState<boolean | null>(null);
+  const confirming = confirmFor === active;
+  const setConfirming = (v: boolean) => setConfirmFor(v ? active : null);
   return (
     <div className="flex flex-col gap-2">
       <form action={resetAction} className="flex gap-2">
@@ -105,10 +109,21 @@ export function RowActions({ id, username, active }: { id: string; username: str
         <button type="submit" className={btn}>Rename</button>
       </form>
       <Err state={rename} />
-      <form action={toggleAction}>
+      <form action={toggleAction} className="flex gap-2">
         <input type="hidden" name="studentId" value={id} />
         <input type="hidden" name="active" value={active ? "false" : "true"} />
-        <button type="submit" className={btn}>{active ? "Deactivate" : "Reactivate"}</button>
+        {active && !confirming ? (
+          <button type="button" className={btn} onClick={() => setConfirming(true)}>Deactivate</button>
+        ) : (
+          <>
+            <button type="submit" className={btn}>
+              {active ? "Confirm deactivate" : "Reactivate"}
+            </button>
+            {active && (
+              <button type="button" className={btn} onClick={() => setConfirming(false)}>Cancel</button>
+            )}
+          </>
+        )}
       </form>
       <Err state={toggle} />
     </div>

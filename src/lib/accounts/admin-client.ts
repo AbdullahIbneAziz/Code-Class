@@ -1,7 +1,7 @@
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/** The only route by which server actions obtain the service-role client. */
+/** Convenience wrapper for obtaining the service-role client. Importing createAdminSupabase directly is also allowed (e.g. src/actions/account.ts). */
 export function getAdminClient(): SupabaseClient {
   return createAdminSupabase();
 }

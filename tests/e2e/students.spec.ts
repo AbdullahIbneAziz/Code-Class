@@ -40,4 +40,13 @@ test("teacher adds a student, sees the temp password once, and the student can l
   await loginVia(p2, username, temp);
   await expectPath(p2, "/account/new-password");
   await ctx.close();
+
+  // Deactivate needs an inline confirmation; Cancel backs out.
+  const row = page.getByRole("row", { name: new RegExp(username) });
+  await row.getByRole("button", { name: "Deactivate" }).click();
+  await row.getByRole("button", { name: "Cancel" }).click();
+  await expect(row.getByRole("button", { name: "Deactivate" })).toBeVisible();
+  await row.getByRole("button", { name: "Deactivate" }).click();
+  await row.getByRole("button", { name: "Confirm deactivate" }).click();
+  await expect(row.getByRole("button", { name: "Reactivate" })).toBeVisible();
 });
