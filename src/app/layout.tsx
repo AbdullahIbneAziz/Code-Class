@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { Geist } from "next/font/google";
 import "./globals.css";
@@ -23,6 +24,7 @@ async function UserBar() {
   return (
     <form action="/auth/signout" method="post" className="flex items-center gap-3 text-sm">
       <span className="text-black/70 dark:text-white/70">{p?.display_name}</span>
+      <Link href="/account" className="underline">My account</Link>
       <button
         type="submit"
         className="rounded border border-black/20 px-3 py-1 hover:bg-black/5 dark:border-white/25 dark:hover:bg-white/10"

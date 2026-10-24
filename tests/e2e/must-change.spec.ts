@@ -57,3 +57,57 @@ test("deactivated user is signed out and sent to /login", async ({ page }) => {
   await page.goto("/");
   await expectPath(page, "/login");
 });
+
+test("first login forces new password, then lands on home; the next login goes straight to home", async ({ page, browser }) => {
+  const u = await makeTestUser("student", { mustChangePassword: true });
+  const next = `Fresh-${u.password}`;
+  await loginVia(page, u.username, u.password);
+  await expectPath(page, "/account/new-password");
+  await expect(page.getByRole("heading", { name: "Choose your new password" })).toBeVisible();
+  await expect(page.getByText("This is a temporary password from your teacher. Please choose your own.")).toBeVisible();
+
+  await page.getByLabel("Current password").fill(u.password);
+  await page.getByLabel("New password", { exact: true }).fill(next);
+  await page.getByLabel("Confirm new password").fill("something-else-1");
+  await page.getByRole("button", { name: "Change password" }).click();
+  await expect(page.locator("form [role=alert]")).toHaveText("The two new passwords don't match.");
+
+  // The form resets after each submit, so fill every field again.
+  await page.getByLabel("Current password").fill(u.password);
+  await page.getByLabel("New password", { exact: true }).fill(next);
+  await page.getByLabel("Confirm new password").fill(next);
+  await page.getByRole("button", { name: "Change password" }).click();
+  await expectPath(page, "/");
+  await expect(page.getByText("Your homework will appear here.")).toBeVisible();
+
+  const ctx = await browser.newContext();
+  const p2 = await ctx.newPage();
+  await loginVia(p2, u.username, next);
+  await expectPath(p2, "/");
+  await ctx.close();
+
+  // Voluntary change on /account
+  await page.goto("/account");
+  await expect(page.getByRole("heading", { name: "My account" })).toBeVisible();
+  await expect(page.getByText(u.username)).toBeVisible();
+});
+
+test("after teacher reset, next login forces new password again", async ({ page, browser }) => {
+  const teacher = await makeTestUser("teacher");
+  const student = await makeTestUser("student");
+  await loginVia(page, teacher.username, teacher.password);
+  await expectPath(page, "/teacher");
+  await page.goto("/teacher/students");
+  const row = page.getByRole("row", { name: new RegExp(student.username) });
+  await expect(row).toBeVisible();
+  const temp = `Temp-${student.password.slice(-8)}`;
+  await row.getByLabel(`Reset password for ${student.username}`).fill(temp);
+  await row.getByRole("button", { name: "Reset password" }).click();
+  await expect(page.getByTestId("temp-password")).toHaveText(temp);
+
+  const ctx = await browser.newContext();
+  const p2 = await ctx.newPage();
+  await loginVia(p2, student.username, temp);
+  await expectPath(p2, "/account/new-password");
+  await ctx.close();
+});
