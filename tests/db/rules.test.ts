@@ -442,3 +442,22 @@ describe("rule functions and views", () => {
       expect(r.rows[0]).toEqual({ a1: false, a2: false, u1: true, u2: true });
     }));
 });
+
+describe("touch_last_seen", () => {
+  it("updates an active user but leaves a deactivated user's last_seen_at unchanged", async () => {
+    await withTx(async (c) => {
+      const act = await seedUser(c, { role: "student", username: "t_seen_a" });
+      const off = await seedUser(c, { role: "student", username: "t_seen_b", isActive: false });
+      await actAs(c, act);
+      await c.query("select public.touch_last_seen()");
+      await c.query("reset role");
+      const a = await c.query("select last_seen_at from public.profiles where id = $1", [act]);
+      expect(a.rows[0].last_seen_at).not.toBeNull();
+      await actAs(c, off);
+      await c.query("select public.touch_last_seen()");
+      await c.query("reset role");
+      const b = await c.query("select last_seen_at from public.profiles where id = $1", [off]);
+      expect(b.rows[0].last_seen_at).toBeNull();
+    });
+  });
+});

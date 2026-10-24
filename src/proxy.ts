@@ -1,10 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 
 type CookieToSet = { name: string; value: string; options?: Record<string, unknown> };
 
 // Next 16 renamed middleware.ts to proxy.ts (see node_modules/next/dist/docs).
-export async function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const pending: CookieToSet[] = [];
   let cacheHeaders: Record<string, string> = {};
   const supabase = createServerClient(
@@ -75,10 +75,12 @@ export async function proxy(request: NextRequest) {
   // 5. Logged in on /login
   if (path === "/login") return go(home);
 
-  // Fire and forget; errors ignored.
-  void supabase.rpc("touch_last_seen").then(
-    () => {},
-    () => {},
+  // Non-blocking, but kept alive after the response on serverless; errors ignored.
+  event.waitUntil(
+    Promise.resolve(supabase.rpc("touch_last_seen")).then(
+      () => {},
+      () => {},
+    ),
   );
 
   return next();
