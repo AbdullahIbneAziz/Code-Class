@@ -17,7 +17,7 @@ function walk(dir: string, exts: string[]): string[] {
 
 const ADMIN_FILE = path.join(ROOT, "src/lib/supabase/admin.ts");
 const ALLOWED = [
-  /^src\/lib\/accounts\/[^/]+\.ts$/,
+  /^src\/lib\/accounts\/admin-client\.ts$/,
   /^src\/actions\/account\.ts$/,
   /^scripts\/[^/]+\.ts$/,
   /^tests\/.+/,

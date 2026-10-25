@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Geist } from "next/font/google";
 import "./globals.css";
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 };
 
 async function UserBar() {
+  await connection();
   const supabase = await createServerSupabase();
   const { data } = await supabase.auth.getUser();
   if (!data.user) return null;

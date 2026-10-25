@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { DownloadButton } from "@/components/DownloadButton";
 import { UkTime } from "@/components/UkTime";
 import { BUCKET } from "@/lib/files/rules";
@@ -16,6 +17,7 @@ export default async function StudentHomeworkDetail({ params }: { params: Promis
   const item = await getMyItem(client, id);
   if (!item) notFound(); // hidden, unassigned or unknown: nothing is rendered
   const files = await listQuestionFiles(client, id);
+  await connection(); // the clock is read below
   return (
     <main className="mx-auto w-full max-w-2xl p-6">
       <h1 className="text-2xl font-semibold">{item.title}</h1>
