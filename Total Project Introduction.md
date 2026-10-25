@@ -1,8 +1,8 @@
 # CodeClass: Total Project Introduction
 
 > One document that explains the whole project: what it is, why it exists, what's built, what's next, how it works, and where everything lives.
-> **Last updated:** 25 October 2026 (Phase 3 built; deploy pending)
-> **Current stage:** Phases 0–2 built, reviewed and live. Phase 3 (marking and progress) built and reviewed; deploy pending. Phase 4 (class tests) is next.
+> **Last updated:** 26 October 2026 (after the Phase 3 deploy)
+> **Current stage:** Phases 0–3 built, reviewed and live. Phase 4 (class tests) is next.
 
 ---
 
@@ -92,7 +92,7 @@ The full rules are in [ARCHITECTURE.md](ARCHITECTURE.md) §4.
 | 0 | Login proof (username login works on Supabase) | ✅ Done |
 | 1 | Foundation | ✅ Done and live |
 | 2 | Lectures + homework | ✅ Done and live (25 Oct 2026) |
-| 3 | Marking + progress | ✅ Built and reviewed; deploy pending |
+| 3 | Marking + progress | ✅ Done and live (26 Oct 2026) |
 | 4 | Class tests | ⏳ |
 | 5 | Exceptions + polish | ⏳ |
 | 6 | Go-live checks (backups, real accounts) | ⏳ |
@@ -215,6 +215,5 @@ To create the teacher account (once): `npm run -s create-teacher -- --username m
 
 ## 15. What's next
 
-1. Deploy Phase 3 (marking and progress).
-2. Build **Phase 4: class tests.**
-3. Continue with Phases 5–6. The students start using the platform once Phases 2 and 3 are done, and real accounts are created in Phase 6.
+1. Build **Phase 4: class tests.**
+2. Continue with Phases 5–6. The students start using the platform once Phases 2 and 3 are done, and real accounts are created in Phase 6.

@@ -25,6 +25,8 @@ Phase 3 (current) includes:
 - Solutions: the teacher uploads a solution and students see it under fixed rules.
 - Progress: marks, averages and counts for the teacher dashboard and for each student.
 
+Phase 3 went live on 26 October 2026. All 58 browser tests for solutions, marking, the dashboard, student marks, progress, the home page, submitting and login passed on the live site, and the test accounts were removed afterwards.
+
 ## Settings you need
 
 Settings live in a file called `.env.local` in the project folder. It is never committed to git. Copy `.env.example` to `.env.local` and fill in the values from supabase.com (Project Settings → API).
@@ -203,4 +205,5 @@ Replaced or deleted files stay in storage until the Phase 5 clean-up, so they st
 Netlify free plan: 300 credits a month (billing period 22nd to 21st).
 
 - 25 October 2026, after the Phase 1 and Phase 2 deploys plus the live browser tests: **15 credits used** this period (2 builds, about 2,300 web requests, 21 MB bandwidth). Each production deploy costs a few credits, so about 10 deploys a month stays well inside the free limit.
+- 26 October 2026, after the Phase 3 deploy and its live browser tests: Netlify shows **253 credits available** (it was 269 after Phase 2), so Phase 3's deploy and tests used about 16 credits.
 - Supabase: free plan, £0.
