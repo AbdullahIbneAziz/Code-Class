@@ -8,7 +8,16 @@ Design details: [ARCHITECTURE.md](ARCHITECTURE.md). Live site: https://codeclass
 
 It is a web app written with Next.js (a JavaScript framework; think of it as Flask or Django for the browser, with the pages and the server code in one project). You do not need to know Next.js for day-to-day use. This file covers what you need to run and look after it.
 
-Phase 1 (current) includes: username login, forced password change at first login, and a teacher page to add, reset, rename and deactivate students.
+Phase 1 included: username login, forced password change at first login, and a teacher page to add, reset, rename and deactivate students.
+
+Phase 2 (current) includes:
+
+- Lectures: the teacher uploads, edits and deletes lectures; students download them.
+- Homework: the teacher creates it, schedules when it appears, chooses which students get it, attaches question files, edits it under fixed rules and deletes it.
+- UK time entry, with BD time shown beside it on teacher screens.
+- Student homework list and detail pages with downloads. Hidden or unassigned homework simply shows "not found".
+- Student upload: on time, late, replace until marked, and missed work.
+- A student home page with a "pending homework" banner.
 
 ## Settings you need
 
@@ -55,7 +64,9 @@ Run this once per Supabase project, from the project folder:
 npm run -s create-teacher -- --username miraz --name "Your Name" --password <temp>
 ```
 
-Replace `<temp>` with a temporary password of at least 8 characters. The `-s` flag stops npm from printing the full command back on screen, which would show the password. You will be forced to choose a new password the first time you log in, so the temporary one is only used once.
+Replace `<temp>` with a temporary password of at least 8 characters. The `-s` flag stops npm from printing the full command back on screen, which would show the password.
+
+In the Windows Command Prompt (cmd), do not use any of these characters in the password: `<` `>` `&` `|` `^` `%`. cmd treats them as special commands and will cut the password short or fail. Use letters, numbers and characters such as `-`, `_`, `.` or `!` instead (or use PowerShell). You will be forced to choose a new password the first time you log in, so the temporary one is only used once.
 
 ## Add / reset / rename / deactivate a student
 
@@ -76,6 +87,56 @@ npm run -s reset-teacher-password -- --username miraz --password <temp>
 
 Replace `<temp>` with a temporary password of at least 8 characters (the `-s` flag stops npm from printing it back). The script only needs the username `miraz`. It works for the teacher account only. Then log in with the temporary password: you will be asked to choose a new one straight away.
 
+## Upload a lecture
+
+Log in, open **Lectures**, press New lecture, give it a title, and choose the files. Allowed types are `.ipynb`, `.py`, `.pdf`, `.pptx`, `.png` and `.jpg`, up to 25 MB each. Students see it straight away and can download the files. You can edit the title, add or replace files, or delete the lecture later. Deleting is permanent.
+
+## Create and schedule homework
+
+Open **Homework**, then New homework. Fill in the title, instructions, maximum mark, the **show from** time and the **deadline**, and attach question files (`.ipynb`, `.py`, `.pdf`, `.txt`, `.zip`, up to 25 MB).
+
+- Leave **show from** blank to publish now. Otherwise students cannot see it until that time.
+- Every active student is ticked by default. Untick anyone who should not get it.
+- New students only get work created after they join. Older homework is not added to them automatically.
+
+## Edit homework after it's published
+
+The database enforces these rules, so the pages cannot get around them.
+
+| What you change | Before anyone has submitted | After someone has submitted |
+| --- | --- | --- |
+| Title, instructions | Any time | Any time |
+| Question file (replace) | Allowed | Allowed, with a warning (see below) |
+| Show from | Allowed before it is visible | Locked once visible |
+| Deadline later | Allowed | Allowed (late work may become on time) |
+| Deadline earlier | Allowed (not before now) | Blocked |
+| Maximum mark | Allowed | Locked once any work has been marked |
+| Add a student | Allowed | Allowed |
+| Remove a student | Allowed | Blocked for a student who has submitted |
+| Delete the homework | Allowed | Blocked once anyone has submitted |
+
+Replacing a question file shows this warning: students who already downloaded the old file will not see the change, so tell them in class.
+
+## UK time and clock changes
+
+All times you type are UK time. On teacher screens the same moment in Bangladesh time is shown in grey beside it.
+
+- In March, when the clocks go forward, one hour does not exist (01:00 to 02:00). A time in that hour is refused; choose another.
+- In October, when the clocks go back, one hour happens twice. If you pick a time in it, the form asks whether you mean BST (the first time) or GMT (the second).
+
+## What students see
+
+- The home page starts with a banner such as "⚠ You have 2 pending homeworks" ("1 pending homework" for one).
+- Each homework shows as pending, on time, late or missed.
+- A student uploads a `.ipynb` or `.py` file (up to 5 MB). Before the deadline it counts as on time; after it, late.
+- A student can replace their file until you mark it.
+- On-time work is locked after the deadline, so it cannot be swapped for a different file later.
+- If nothing is uploaded by the deadline, the homework shows as missed.
+
+## Upload proof
+
+To be filled after the Phase 2 deploy (date and result of the live 25 MB lecture and 5 MB notebook upload checks).
+
 ## Supabase project paused
 
 The free Supabase plan pauses a project after a week with no activity. If the site shows errors or nobody can log in after a quiet spell:
@@ -86,18 +147,14 @@ The free Supabase plan pauses a project after a week with no activity. If the si
 
 ## Deploying
 
-The site is on Netlify as `codeclass-tuition`. GitHub is not linked for automatic deploys yet, so until then deploy manually from the project folder:
+The site is on Netlify as `codeclass-tuition`, and it rebuilds automatically from GitHub whenever the `main` branch changes. You do not need to run a deploy command.
 
-```
-npx netlify-cli deploy --build --prod
-```
-
-To make Netlify deploy automatically on every push instead: Netlify → Project configuration → Build & deploy → Link repository → AbdullahIbneAziz/Code-Class.
-
-Keep it to about 10 deploys a month: each deploy uses Netlify credits on the free plan. Check Netlify → Usage now and then. Before deploying, run `npm run lint`, `npm test` and `npm run build` so you do not spend a deploy on a broken build.
+Keep it to a few deploys a month: each deploy uses Netlify credits on the free plan. Check Netlify → Usage now and then. Before merging, run `npm run lint`, `npm test` and `npm run build` so you do not spend a deploy on a broken build.
 
 After a deploy, `BASE_URL=https://codeclass-tuition.netlify.app npm run test:e2e -- login must-change students` runs the browser tests against the live site.
 
 ## Running costs
 
 To be filled in after the first deploy (Netlify → Usage baseline).
+
+Phase 2 deploy credits: to be filled after the Phase 2 deploy.
