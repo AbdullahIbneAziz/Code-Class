@@ -1,15 +1,15 @@
-import { config } from "dotenv";
+import { loadTestEnv } from "../env";
 import pg from "pg";
 import { randomUUID } from "node:crypto";
 
-config({ path: ".env.local", quiet: true });
+loadTestEnv();
 
 let pool: pg.Pool | null = null;
 
 export function getPool(): pg.Pool {
   if (!pool) {
     const url = process.env.DATABASE_URL;
-    if (!url) throw new Error("DATABASE_URL is not set (.env.local)");
+    if (!url) throw new Error("DATABASE_URL is not set (.env.test.local)");
     pool = new pg.Pool({ connectionString: url, ssl: { rejectUnauthorized: false }, max: 4 });
   }
   return pool;

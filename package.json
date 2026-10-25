@@ -12,6 +12,8 @@
     "test:api": "vitest run tests/api",
     "test:e2e": "playwright test",
     "db:push": "tsx scripts/db-push.ts",
+    "db:push:test": "tsx scripts/db-push-test.ts",
+    "test:sweep": "tsx scripts/sweep-test-data.ts",
     "phase0": "tsx scripts/phase0-login-proof.ts",
     "create-teacher": "tsx scripts/create-teacher.ts",
     "reset-teacher-password": "tsx scripts/reset-teacher-password.ts"

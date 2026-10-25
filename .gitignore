@@ -227,6 +227,7 @@ out/
 .netlify/
 .env*
 !.env.example
+!.env.test.example
 test-results/
 playwright-report/
 .superpowers/

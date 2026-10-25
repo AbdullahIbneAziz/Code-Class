@@ -1,9 +1,9 @@
-import { config } from "dotenv";
+import { loadTestEnv } from "../env";
 import { createClient } from "@supabase/supabase-js";
 import type pg from "pg";
 import { getPool } from "./helpers";
 
-config({ path: ".env.local", quiet: true });
+loadTestEnv();
 
 /** Everything a committed (non-rolled-back) fixture created. Cleanup removes exactly this. */
 export type Committed = {

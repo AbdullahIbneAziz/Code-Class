@@ -1,9 +1,9 @@
-import { config } from "dotenv";
+import { loadTestEnv } from "../env";
 import { randomBytes, randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { usernameToEmail } from "@/lib/auth/username";
 
-config({ path: ".env.local", quiet: true });
+loadTestEnv();
 
 const URL_ = () => process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const ANON = () => process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;

@@ -59,10 +59,29 @@ Useful commands:
 | `npm run test:db` | Database tests |
 | `npm run test:api` | API tests |
 | `npm run test:e2e` | Browser tests (Playwright) |
-| `npm run db:push` | Apply database migrations to Supabase |
+| `npm run db:push` | Apply database migrations to the live Supabase project |
+| `npm run db:push:test` | Apply database migrations to the test project |
+| `npm run test:sweep` | Delete leftover `t_` test data from the test project |
 | `npm run phase0` | Check that username login works against Supabase |
 | `npm run create-teacher` | Create the teacher account |
 | `npm run reset-teacher-password` | Set a new temporary password for the teacher |
+
+## Test database
+
+All the tests (database, API and browser) use a separate Supabase project called `codeclass-test`. The live site never uses it, and the tests refuse to run if they are pointed at the live project.
+
+Set it up once:
+
+1. Create the `codeclass-test` project on supabase.com (London).
+2. Copy `.env.test.example` to `.env.test.local` and fill in its values from that project. The file is never committed to git.
+3. Set the same Auth options as `supabase/project-settings.md`: public sign-up OFF, Confirm email OFF, Secure password change OFF, no custom SMTP, minimum password length 8.
+4. Run `npm run db:push:test` to build the database tables.
+
+After that, `npm run test:db`, `npm run test:api` and `npm run test:e2e` all run against the test project. The browser tests start their own copy of the site on http://localhost:3100, so close nothing: your normal `npm run dev` on port 3000 is left alone (but stop it if the browser tests complain that a server is already running).
+
+Tests clean up after themselves. If one is interrupted, run `npm run test:sweep` to remove leftover `t_` test data from the test project.
+
+Running the browser tests against the live website is possible, but only on purpose. Set `BASE_URL` to the site address and also `ALLOW_LIVE_DB=1`. These tests write `t_` test accounts and homework into the live database (and remove them afterwards), so without `ALLOW_LIVE_DB=1` they stop with the message "Live-site e2e needs ALLOW_LIVE_DB=1". To clear leftovers on the live database use `npm run test:sweep -- --live` with `ALLOW_LIVE_DB=1` set; it only ever deletes things whose name starts with `t_`.
 
 ## Create the teacher account
 
