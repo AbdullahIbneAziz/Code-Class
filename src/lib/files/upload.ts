@@ -11,6 +11,53 @@ function failureMessage(status: number | undefined): string {
   return status !== undefined && status >= 400 && status < 500 ? REFUSED : FAILED;
 }
 
+/** TUS options. The token is read per request (never baked in) so a long upload survives a session refresh. */
+export function tusOptions(
+  client: SupabaseClient,
+  bucket: string,
+  path: string,
+  contentType: string,
+  cb: { onProgress: (fraction: number) => void; onSuccess: () => void; onError: (status: number | undefined) => void },
+): tus.UploadOptions {
+  // onShouldRetry is synchronous in tus-js-client, so the refresh is started there and awaited before the retry's request.
+  let refreshing: Promise<unknown> | null = null;
+  return {
+    endpoint: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/upload/resumable`,
+    headers: { "x-upsert": "false" },
+    metadata: { bucketName: bucket, objectName: path, contentType, cacheControl: "3600" },
+    chunkSize: 6 * 1024 * 1024,
+    uploadDataDuringCreation: true,
+    removeFingerprintOnSuccess: true,
+    retryDelays: [0, 3000, 5000, 10000],
+    async onBeforeRequest(req) {
+      if (refreshing) {
+        await refreshing;
+        refreshing = null;
+      }
+      const { data } = await client.auth.getSession();
+      req.setHeader("authorization", `Bearer ${data.session?.access_token ?? ""}`);
+    },
+    onShouldRetry(err, retryAttempt, options) {
+      const status = (err as { originalResponse?: { getStatus(): number } | null }).originalResponse?.getStatus();
+      if ((status === 401 || status === 403) && retryAttempt === 0) {
+        refreshing = client.auth.refreshSession().catch(() => undefined);
+        return true;
+      }
+      return tus.defaultOptions.onShouldRetry!(err, retryAttempt, options);
+    },
+    onError(err) {
+      cb.onError((err as { originalResponse?: { getStatus(): number } | null }).originalResponse?.getStatus());
+    },
+    onProgress(sent, total) {
+      if (total > 0) cb.onProgress(sent / total);
+    },
+    onSuccess() {
+      cb.onProgress(1);
+      cb.onSuccess();
+    },
+  };
+}
+
 /** Uploads straight to Supabase Storage with the user's session. Never overwrites (upsert: false). */
 export async function uploadObject(
   client: SupabaseClient,
@@ -30,31 +77,15 @@ export async function uploadObject(
     return { ok: true };
   }
 
-  const { data } = await client.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) return { ok: false, message: FAILED };
-
   return new Promise<ActionResult>((resolve) => {
-    const upload = new tus.Upload(file, {
-      endpoint: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/upload/resumable`,
-      headers: { authorization: `Bearer ${token}`, "x-upsert": "false" },
-      metadata: { bucketName: bucket, objectName: path, contentType, cacheControl: "3600" },
-      chunkSize: 6 * 1024 * 1024,
-      uploadDataDuringCreation: true,
-      removeFingerprintOnSuccess: true,
-      retryDelays: [0, 3000, 5000, 10000],
-      onError(err) {
-        const status = (err as { originalResponse?: { getStatus(): number } | null }).originalResponse?.getStatus();
-        resolve({ ok: false, message: failureMessage(status) });
-      },
-      onProgress(sent, total) {
-        if (total > 0) onProgress?.(sent / total);
-      },
-      onSuccess() {
-        onProgress?.(1);
-        resolve({ ok: true });
-      },
-    });
+    const upload = new tus.Upload(
+      file,
+      tusOptions(client, bucket, path, contentType, {
+        onProgress: (fraction) => onProgress?.(fraction),
+        onSuccess: () => resolve({ ok: true }),
+        onError: (status) => resolve({ ok: false, message: failureMessage(status) }),
+      }),
+    );
     upload.start();
   });
 }

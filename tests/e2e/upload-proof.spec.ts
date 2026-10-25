@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { randomBytes } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { adminClient, cleanupTestUsers, makeTestUser, trackFolder, trackLecture } from "../api/helpers";
+import { adminClient, cleanupTestUsers, makeTestUser, trackLectureTitle } from "../api/helpers";
 import { loginVia, expectPath } from "./helpers";
 
 const BYTES = 25 * 1024 * 1024 - 1024;
@@ -19,6 +19,7 @@ test("teacher uploads a ~25 MB lecture file through the site (resumable)", async
 
   const teacher = await makeTestUser("teacher");
   const t = `t_big_${randomBytes(3).toString("hex")}`;
+  trackLectureTitle(t); // before clicking, so a failure still cleans up
   await loginVia(page, teacher.username, teacher.password);
   await expectPath(page, "/teacher");
   await page.goto("/teacher/lectures");
@@ -29,20 +30,8 @@ test("teacher uploads a ~25 MB lecture file through the site (resumable)", async
   await page.getByRole("button", { name: "Upload lecture" }).click();
   await resumable;
 
-  // Track as soon as the lecture row exists so cleanup removes objects even if an assertion fails.
-  let id = "";
-  await expect
-    .poll(
-      async () => {
-        const { data } = await adminClient().from("lectures").select("id").eq("title", t);
-        id = data?.[0]?.id ?? "";
-        return id;
-      },
-      { timeout: 30_000 },
-    )
-    .not.toBe("");
-  trackLecture(id);
-  trackFolder("lectures", id);
+  const { data: lec } = await adminClient().from("lectures").select("id").eq("title", t).single();
+  const id = lec!.id as string;
 
   await expect(page.getByRole("article", { name: t }).getByText("t_big.pdf")).toBeVisible({ timeout: 150_000 });
 

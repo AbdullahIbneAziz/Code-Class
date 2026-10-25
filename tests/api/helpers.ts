@@ -28,6 +28,12 @@ export function trackObject(bucket: string, path: string): void {
 
 const trackedFolders: { bucket: string; folder: string }[] = [];
 const createdLectureIds: string[] = [];
+const lectureTitles: string[] = [];
+
+/** Register a lecture TITLE before the UI creates it; cleanup resolves ids by title and removes rows + objects. */
+export function trackLectureTitle(title: string): void {
+  lectureTitles.push(title);
+}
 
 /** Record a storage folder; cleanup lists it recursively and removes every object (and replaced_files rows). */
 export function trackFolder(bucket: string, folder: string): void {
@@ -143,6 +149,14 @@ export async function cleanupTestUsers(): Promise<void> {
     if (error) errors.push(`remove ${bucket}: ${error.message}`);
   }
   uploaded.length = 0;
+  for (const title of lectureTitles.splice(0)) {
+    const { data, error } = await admin.from("lectures").select("id").eq("title", title);
+    if (error) errors.push(`lecture lookup: ${error.message}`);
+    for (const l of data ?? []) {
+      createdLectureIds.push(l.id);
+      trackedFolders.push({ bucket: "lectures", folder: l.id });
+    }
+  }
   for (const { bucket, folder } of trackedFolders.splice(0)) {
     try {
       const paths = await listAllPaths(bucket, folder);

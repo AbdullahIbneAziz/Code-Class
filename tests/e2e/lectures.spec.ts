@@ -1,19 +1,22 @@
 import { test, expect } from "@playwright/test";
 import { randomBytes } from "node:crypto";
-import { adminClient, cleanupTestUsers, makeTestUser, trackFolder, trackLecture } from "../api/helpers";
+import { adminClient, cleanupTestUsers, makeTestUser, trackFolder, trackLectureTitle } from "../api/helpers";
 import { loginVia, expectPath } from "./helpers";
 
 test.afterAll(cleanupTestUsers);
 
-async function trackByTitle(title: string): Promise<string> {
+async function idByTitle(title: string): Promise<string> {
   const { data, error } = await adminClient().from("lectures").select("id").eq("title", title).single();
   if (error) throw new Error(error.message);
-  trackLecture(data.id);
-  trackFolder("lectures", data.id);
+  trackFolder("lectures", data.id); // the UI may delete the row, so remember the folder too
   return data.id;
 }
 
-const title = () => `t_lecture_${randomBytes(3).toString("hex")}`;
+const title = () => {
+  const t = `t_lecture_${randomBytes(3).toString("hex")}`;
+  trackLectureTitle(t); // registered before the UI creates it, so a failing test still cleans up
+  return t;
+};
 const pdf = (n: number) => ({ name: "t_notes.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(n, 1) });
 const nb = { name: "t_demo.ipynb", mimeType: "application/json", buffer: Buffer.alloc(2 * 1024, 2) };
 
@@ -32,7 +35,7 @@ test("teacher uploads a lecture with two files and a student downloads one with 
   const card = page.getByRole("article", { name: t });
   await expect(card.getByText("t_notes.pdf")).toBeVisible({ timeout: 30_000 });
   await expect(card.getByText("t_demo.ipynb")).toBeVisible();
-  await trackByTitle(t);
+  
 
   const ctx = await browser.newContext();
   const sp = await ctx.newPage();
@@ -59,7 +62,7 @@ test("teacher replaces a lecture file and deletes a lecture after confirming", a
   await page.getByRole("button", { name: "Upload lecture" }).click();
   const card = page.getByRole("article", { name: t });
   await expect(card.getByText("t_notes.pdf")).toBeVisible({ timeout: 30_000 });
-  const id = await trackByTitle(t);
+  const id = await idByTitle(t);
 
   await card.locator('input[aria-label^="Replacement for"]').setInputFiles({
     name: "t_new.pdf",
