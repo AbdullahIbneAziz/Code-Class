@@ -125,5 +125,8 @@ test("deadline passes while the page is open: the upload is refused with the on-
   expect(rows).toHaveLength(1);
   expect(rows[0].revision).toBe(1);
   expect(rows[0].object_path).toBe(first.object_path);
+  expect(rows[0].submitted_at).toBe(first.submitted_at);
+  // The refused file is still chosen, so the student can retry or pick another.
+  await expect.poll(() => input.evaluate((el: HTMLInputElement) => el.files?.[0]?.name)).toBe("t_second.ipynb");
   expect(rows[0].original_name).toBe("t_first.ipynb");
 });

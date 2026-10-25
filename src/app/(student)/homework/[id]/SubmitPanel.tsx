@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
+import { useHydrated } from "@/lib/ui/useHydrated";
 import { DownloadButton } from "@/components/DownloadButton";
 import { UkTime } from "@/components/UkTime";
 import { uploadAndFinalize } from "@/lib/files/submit";
@@ -16,6 +17,7 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
  */
 export function SubmitPanel({ item, deadlinePassed = false }: { item: StudentItem; deadlinePassed?: boolean }) {
   const router = useRouter();
+  const hydrated = useHydrated();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
@@ -90,7 +92,7 @@ export function SubmitPanel({ item, deadlinePassed = false }: { item: StudentIte
           <div>
             <button
               type="submit"
-              disabled={busy}
+              disabled={!hydrated || busy}
               className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-60 dark:bg-white dark:text-black"
             >
               {busy ? "Uploading…" : "Upload"}

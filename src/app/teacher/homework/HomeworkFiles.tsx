@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useHydrated } from "@/lib/ui/useHydrated";
 import { useRouter } from "next/navigation";
 import { DownloadButton } from "@/components/DownloadButton";
 import { uploadAndAttach, uploadAndReplace } from "@/lib/files/attach";
@@ -14,6 +15,7 @@ const ACCEPT = ALLOWED_EXT.question.map((e) => "." + e).join(",");
 function FileItem({ assignmentId, file }: { assignmentId: string; file: FileRow }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const hydrated = useHydrated();
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const ref = useRef<HTMLInputElement>(null);
@@ -47,7 +49,7 @@ function FileItem({ assignmentId, file }: { assignmentId: string; file: FileRow 
     <li className="py-1">
       <span className="mr-3">{file.originalName}</span>
       <DownloadButton bucket={BUCKET.question} objectPath={file.objectPath} downloadName={file.originalName} />{" "}
-      <button type="button" disabled={pending} className={btn} onClick={() => ref.current?.click()}>
+      <button type="button" disabled={!hydrated || pending} className={btn} onClick={() => ref.current?.click()}>
         Replace
       </button>
       <input
@@ -83,6 +85,7 @@ export function HomeworkFiles({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const hydrated = useHydrated();
   const [error, setError] = useState<string | null>(null);
   const addRef = useRef<HTMLInputElement>(null);
 
@@ -127,7 +130,7 @@ export function HomeworkFiles({
         </p>
       )}
       <div className="mt-2">
-        <button type="button" disabled={pending} className={btn} onClick={() => addRef.current?.click()}>
+        <button type="button" disabled={!hydrated || pending} className={btn} onClick={() => addRef.current?.click()}>
           Add question file
         </button>
         <input

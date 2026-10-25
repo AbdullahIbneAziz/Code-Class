@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useHydrated } from "@/lib/ui/useHydrated";
 import { useRouter } from "next/navigation";
 import { createHomeworkAction, updateHomeworkAction } from "@/actions/homework";
 import { UkDateTimeField } from "@/components/UkDateTimeField";
@@ -34,6 +35,7 @@ export type EditProps = {
 export function HomeworkForm(props: CreateProps | EditProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const hydrated = useHydrated();
   const [state, setState] = useState<HomeworkFormState>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
@@ -130,7 +132,7 @@ export function HomeworkForm(props: CreateProps | EditProps) {
         </label>
       )}
       <div>
-        <button type="submit" disabled={pending} className={btn}>
+        <button type="submit" disabled={!hydrated || pending} className={btn}>
           {create ? "Create homework" : "Save changes"}
         </button>
       </div>

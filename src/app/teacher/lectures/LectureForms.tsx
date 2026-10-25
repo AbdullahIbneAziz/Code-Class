@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useHydrated } from "@/lib/ui/useHydrated";
 import { useRouter } from "next/navigation";
 import {
   createLectureAction,
@@ -37,6 +38,7 @@ function Progress({ progress }: { progress: { name: string; pct: number } | null
 export function UploadLectureForm() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const hydrated = useHydrated();
   const [error, setError] = useState<string | null>(null);
   const [notes, setNotes] = useState<string[]>([]);
   const [progress, setProgress] = useState<{ name: string; pct: number } | null>(null);
@@ -99,7 +101,7 @@ export function UploadLectureForm() {
         <input name="files" type="file" multiple accept={ACCEPT} />
       </label>
       <div>
-        <button type="submit" disabled={pending} className={btn}>
+        <button type="submit" disabled={!hydrated || pending} className={btn}>
           Upload lecture
         </button>
       </div>
@@ -117,6 +119,7 @@ export function UploadLectureForm() {
 function FileRowView({ lectureId, file }: { lectureId: string; file: Lecture["files"][number] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const hydrated = useHydrated();
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ name: string; pct: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -150,7 +153,7 @@ function FileRowView({ lectureId, file }: { lectureId: string; file: Lecture["fi
     <li className="py-1">
       <span className="mr-3">{file.originalName}</span>
       <DownloadButton bucket={BUCKET.lecture} objectPath={file.objectPath} downloadName={file.originalName} />{" "}
-      <button type="button" disabled={pending} className={btn} onClick={() => inputRef.current?.click()}>
+      <button type="button" disabled={!hydrated || pending} className={btn} onClick={() => inputRef.current?.click()}>
         Replace
       </button>
       <input
@@ -170,6 +173,7 @@ function FileRowView({ lectureId, file }: { lectureId: string; file: Lecture["fi
 export function LectureCard({ lecture }: { lecture: Lecture }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const hydrated = useHydrated();
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -250,7 +254,7 @@ export function LectureCard({ lecture }: { lecture: Lecture }) {
             <textarea name="description" rows={2} defaultValue={lecture.description ?? ""} className={input} />
           </label>
           <div className="flex gap-2">
-            <button type="submit" disabled={pending} className={btn}>
+            <button type="submit" disabled={!hydrated || pending} className={btn}>
               Save
             </button>
             <button type="button" className={btn} onClick={() => setEditing(false)}>
@@ -273,7 +277,7 @@ export function LectureCard({ lecture }: { lecture: Lecture }) {
         ))}
       </ul>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button type="button" disabled={pending} className={btn} onClick={() => addRef.current?.click()}>
+        <button type="button" disabled={!hydrated || pending} className={btn} onClick={() => addRef.current?.click()}>
           Add file
         </button>
         <input
@@ -292,7 +296,7 @@ export function LectureCard({ lecture }: { lecture: Lecture }) {
         )}
         {confirming ? (
           <>
-            <button type="button" disabled={pending} className={btn} onClick={onDelete}>
+            <button type="button" disabled={!hydrated || pending} className={btn} onClick={onDelete}>
               Confirm delete
             </button>
             <button type="button" className={btn} onClick={() => setConfirming(false)}>
