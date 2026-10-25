@@ -10,7 +10,7 @@ function getPool(): pg.Pool {
   if (!pool) {
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL is not set (.env.local)");
-    pool = new pg.Pool({ connectionString: url, ssl: { rejectUnauthorized: false }, max: 2 });
+    pool = new pg.Pool({ connectionString: url, ssl: { rejectUnauthorized: false }, max: 4 });
   }
   return pool;
 }
@@ -104,5 +104,20 @@ export async function assign(
     `insert into public.assignment_students (assignment_id, student_id, opens_at_override, due_at_override, excused)
      values ($1, $2, $3, $4, $5)`,
     [assignmentId, studentId, o.opens_at_override ?? null, o.due_at_override ?? null, o.excused ?? false],
+  );
+}
+
+/** Inserts a storage.objects row (as postgres, inside the tx) so attach_file/replace_file can find it. */
+export async function seedObject(
+  c: pg.PoolClient,
+  bucket: string,
+  name: string,
+  sizeBytes: number,
+  ownerId?: string,
+): Promise<void> {
+  await c.query(
+    `insert into storage.objects (bucket_id, name, owner_id, metadata)
+     values ($1, $2, $3, jsonb_build_object('size', $4::bigint))`,
+    [bucket, name, ownerId ?? null, sizeBytes],
   );
 }

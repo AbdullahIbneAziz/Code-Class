@@ -112,7 +112,7 @@ describe("grants and RLS", () => {
       await assign(c, as, b);
       await seedSubmission(c, as, a);
       await seedSubmission(c, as, b);
-      await c.query("insert into public.replaced_files (object_path) values ('t_x')");
+      await c.query("insert into public.replaced_files (bucket, object_path) values ('lectures', 't_x')");
       await actAs(c, a);
       const own = await c.query("select student_id from public.submissions");
       expect(own.rows.map((x) => x.student_id)).toEqual([a]);
