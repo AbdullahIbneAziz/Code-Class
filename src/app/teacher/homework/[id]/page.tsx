@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { UkTime } from "@/components/UkTime";
 import { getHomeworkForTeacher, listActiveStudents } from "@/lib/homework/queries";
-import { statusLabel } from "@/lib/homework/status";
+import { itemLabel } from "@/lib/homework/status";
+import { MarkForm } from "@/components/MarkForm";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { toUkInputParts } from "@/lib/time/uk";
 import { DeleteHomework } from "../DeleteHomework";
@@ -59,8 +60,22 @@ export default async function EditHomeworkPage({
         <h2 className="text-lg font-semibold">Student status</h2>
         <ul className="mt-2 text-sm">
           {hw.students.map((s) => (
-            <li key={s.studentId}>
-              {s.studentName}: {statusLabel(s)}
+            <li key={s.studentId} aria-label={s.studentName} className="mb-3">
+              {s.studentName}
+              {s.studentIsActive ? "" : " (inactive)"}: {itemLabel(s)}
+              {s.submissionId && (
+                <div className="mt-1">
+                  <p>
+                    Submitted {s.submittedAt && <UkTime at={s.submittedAt} teacher />}
+                  </p>
+                  {s.isMarked && s.markedAt && (
+                    <p>
+                      Marked <UkTime at={s.markedAt} teacher />
+                    </p>
+                  )}
+                  <MarkForm item={s} />
+                </div>
+              )}
             </li>
           ))}
         </ul>
