@@ -245,5 +245,5 @@ describe("grants and RLS", () => {
       expect((await c.query("select 1 from public.assignment_students where assignment_id = $1", [a])).rows).toHaveLength(0);
       await actAs(c, t);
       expect((await c.query("select 1 from public.assignment_students where assignment_id = $1", [a])).rows).toHaveLength(1);
-    }), 90_000);
+    }));
 });

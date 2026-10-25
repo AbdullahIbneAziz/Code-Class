@@ -80,7 +80,7 @@ describe("schema constraints", () => {
 
   it("rejects duplicate username", () =>
     withTx(async (c) => {
-      await seedUser(c, { role: "student", username: "t_dup" });
-      expect(await pgCode(seedUser(c, { role: "student", username: "t_dup" }))).toBe("23505");
+      await seedUser(c, { role: "student", username: "t_dup", exact: true });
+      expect(await pgCode(seedUser(c, { role: "student", username: "t_dup", exact: true }))).toBe("23505");
     }));
 });

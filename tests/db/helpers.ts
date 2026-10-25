@@ -55,17 +55,19 @@ export async function actAs(c: pg.PoolClient, userId: string | null): Promise<vo
 
 export async function seedUser(
   c: pg.PoolClient,
-  opts: { role: "teacher" | "student"; username: string; isActive?: boolean },
+  opts: { role: "teacher" | "student"; username: string; isActive?: boolean; exact?: boolean },
 ): Promise<string> {
   const id = randomUUID();
+  // Unique suffix so parallel uncommitted transactions never block on the same username/email key.
+  const username = opts.exact ? opts.username : `${opts.username}_${id.slice(0, 8)}`;
   await c.query(
     `insert into auth.users (id, email, aud, role) values ($1, $2, 'authenticated', 'authenticated')`,
-    [id, `${opts.username}@test.invalid`],
+    [id, `${username}@test.invalid`],
   );
   await c.query(
     `insert into public.profiles (id, role, username, display_name, is_active)
      values ($1, $2, $3, $4, $5)`,
-    [id, opts.role, opts.username, `Test ${opts.username}`, opts.isActive ?? true],
+    [id, opts.role, username, `Test ${username}`, opts.isActive ?? true],
   );
   return id;
 }
