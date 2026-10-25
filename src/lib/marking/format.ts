@@ -15,3 +15,6 @@ export function parseMarkInput(raw: string): { ok: true; mark: number } | { ok: 
   if (!Number.isFinite(n)) return { ok: false, message: "Please enter a mark as a number." };
   return { ok: true, mark: n };
 }
+
+/** The database refusal when the student uploaded again after the teacher loaded the page. */
+export const REVISION_MESSAGE = "This student uploaded a new version. Please download it again.";

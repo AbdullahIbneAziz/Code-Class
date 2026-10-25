@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { teacherClient } from "@/lib/accounts/teacher-client";
 import { rpcErrorMessage, type ActionResult } from "@/lib/db/errors";
-import { parseMarkInput } from "@/lib/marking/format";
+import { parseMarkInput, REVISION_MESSAGE } from "@/lib/marking/format";
+
+export type SaveMarkResult = ActionResult | { ok: false; message: string; code: "revision" };
 
 export async function saveMarkAction(i: {
   submissionId: string;
@@ -11,7 +13,7 @@ export async function saveMarkAction(i: {
   expectedRevision: number;
   mark: string;
   feedback: string;
-}): Promise<ActionResult> {
+}): Promise<SaveMarkResult> {
   const gate = await teacherClient();
   if (!gate.ok) return gate;
   const parsed = parseMarkInput(i.mark);
@@ -22,7 +24,10 @@ export async function saveMarkAction(i: {
     p_mark: parsed.mark,
     p_feedback: i.feedback,
   });
-  if (error) return { ok: false, message: rpcErrorMessage(error) };
+  if (error) {
+    const message = rpcErrorMessage(error);
+    return message === REVISION_MESSAGE ? { ok: false, message, code: "revision" } : { ok: false, message };
+  }
   revalidatePath("/teacher");
   revalidatePath("/teacher/marking");
   revalidatePath(`/teacher/homework/${i.assignmentId}`);

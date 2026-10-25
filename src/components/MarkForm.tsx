@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveMarkAction } from "@/actions/marking";
 import { DownloadButton } from "@/components/DownloadButton";
@@ -18,12 +18,8 @@ export function MarkForm({ item }: { item: StudentItem }) {
   const [feedback, setFeedback] = useState(item.feedback ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  // Decision 6: fixed at mount; moved to the item's current revision only when Download is clicked.
+  // Decision 6: fixed at mount; moved to the revision of the file being downloaded (same render as objectPath).
   const expected = useRef<number>(item.revision ?? 0);
-  const latest = useRef<number>(item.revision ?? 0);
-  useEffect(() => {
-    latest.current = item.revision ?? 0;
-  }, [item.revision]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,7 +39,7 @@ export function MarkForm({ item }: { item: StudentItem }) {
         router.refresh();
       } else {
         setError(r.message);
-        if (r.message.includes("new version")) router.refresh();
+        if ("code" in r && r.code === "revision") router.refresh();
       }
     });
   }
@@ -51,7 +47,7 @@ export function MarkForm({ item }: { item: StudentItem }) {
   const max = formatMark(item.maxMarks);
   const markLabel = `Mark for ${item.studentName} out of ${max}`;
   return (
-    <form noValidate onSubmit={onSubmit} className="mt-3 flex flex-col gap-2">
+    <form noValidate data-revision={item.revision ?? ""} onSubmit={onSubmit} className="mt-3 flex flex-col gap-2">
       {item.submissionPath && item.submissionName && (
         <div>
           <DownloadButton
@@ -59,7 +55,7 @@ export function MarkForm({ item }: { item: StudentItem }) {
             objectPath={item.submissionPath}
             downloadName={item.submissionName}
             onDownload={() => {
-              expected.current = latest.current;
+              expected.current = item.revision ?? 0;
             }}
           />
         </div>

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 import {
   adminAssign,
   adminClient,
@@ -14,6 +15,7 @@ import {
 } from "../api/helpers";
 import { expectPath, loginVia } from "./helpers";
 
+const NEW_BODY = '{"cells":[1]}';
 const HOUR = 3_600_000;
 const REVISION_COPY = "This student uploaded a new version. Please download it again.";
 let teacher: TestUser;
@@ -127,7 +129,7 @@ test("a new upload after the page loaded is refused with the new-version message
   trackObject("submissions", newPath);
   const up = await adminClient()
     .storage.from("submissions")
-    .upload(newPath, new Blob(['{"cells":[1]}'], { type: "application/json" }));
+    .upload(newPath, new Blob([NEW_BODY], { type: "application/json" }));
   expect(up.error).toBeNull();
   const upd = await adminClient().from("submissions").update({ revision: 2, object_path: newPath }).eq("id", sub.id);
   expect(upd.error).toBeNull();
@@ -136,14 +138,19 @@ test("a new upload after the page loaded is refused with the new-version message
   await r.getByLabel(`Mark for ${s.name} out of 10`).fill("8");
   await r.getByRole("button", { name: "Save" }).click();
   await expect(alert).toHaveText(REVISION_COPY, { timeout: 20_000 });
+  // Wait for router.refresh() to deliver revision 2 to the props before trying again.
+  await expect(r.locator("form")).toHaveAttribute("data-revision", "2", { timeout: 20_000 });
   expect((await dbRow(sub.id)).mark).toBeNull();
 
+  // Saving again without downloading must still fail: the expected revision did not follow the refreshed props.
   await r.getByRole("button", { name: "Save" }).click();
+  await expect(alert).toBeHidden();
   await expect(alert).toHaveText(REVISION_COPY, { timeout: 20_000 });
   expect((await dbRow(sub.id)).mark).toBeNull();
 
   const [download] = await Promise.all([page.waitForEvent("download"), r.getByRole("button", { name: "Download" }).click()]);
   expect(download.suggestedFilename()).toBe("t_work.ipynb");
+  expect(readFileSync((await download.path())!, "utf8")).toBe(NEW_BODY); // the new object was served
   await r.getByRole("button", { name: "Save" }).click();
   // The row leaves the queue after the refresh, so the database is the proof of the save.
   await expect.poll(async () => Number((await dbRow(sub.id)).mark), { timeout: 20_000 }).toBe(8);
