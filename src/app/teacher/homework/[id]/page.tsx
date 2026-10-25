@@ -7,7 +7,9 @@ import { toUkInputParts } from "@/lib/time/uk";
 import { DeleteHomework } from "../DeleteHomework";
 import { HomeworkFiles } from "../HomeworkFiles";
 import { HomeworkForm } from "../HomeworkForm";
+import { HomeworkSolution } from "../HomeworkSolution";
 import { HomeworkStudents } from "../HomeworkStudents";
+import { UnlockSolution } from "@/components/UnlockSolution";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -64,6 +66,8 @@ export default async function EditHomeworkPage({
         </ul>
       </section>
       <HomeworkFiles assignmentId={hw.id} files={hw.files} anySubmission={hw.anySubmission} />
+      <HomeworkSolution assignmentId={hw.id} solution={hw.solution} />
+      <UnlockSolution assignmentId={hw.id} unlocked={hw.solutionUnlockedForAll} />
       <HomeworkStudents assignmentId={hw.id} options={options} assignedIds={hw.students.map((s) => s.studentId)} />
       <DeleteHomework id={hw.id} />
     </main>

@@ -170,7 +170,7 @@ export async function cleanupTestUsers(): Promise<void> {
     if (error) errors.push(`assignment lookup: ${error.message}`);
     for (const a of data ?? []) {
       createdAssignmentIds.push(a.id);
-      trackedFolders.push({ bucket: "questions", folder: a.id });
+      for (const bucket of ["questions", "solutions", "submissions"]) trackedFolders.push({ bucket, folder: a.id });
     }
   }
   for (const { bucket, folder } of trackedFolders.splice(0)) {

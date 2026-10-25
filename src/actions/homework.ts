@@ -103,3 +103,14 @@ export async function setHomeworkStudentsAction(id: string, studentIds: string[]
   refresh(id);
   return { ok: true };
 }
+
+export async function unlockSolutionForAllAction(id: string): Promise<ActionResult> {
+  const gate = await teacherClient();
+  if (!gate.ok) return gate;
+  const client = gate.client;
+  const { error } = await client.rpc("unlock_solution_for_all", { p_assignment_id: id });
+  if (error) return { ok: false, message: rpcErrorMessage(error) };
+  revalidatePath("/teacher");
+  refresh(id);
+  return { ok: true };
+}

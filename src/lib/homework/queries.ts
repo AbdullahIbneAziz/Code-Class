@@ -85,6 +85,7 @@ type DetailRow = {
   max_marks: number | string;
   visible_from: string;
   due_at: string;
+  solution_unlocked_for_all: boolean;
   assignment_files: {
     id: string;
     purpose: string;
@@ -95,11 +96,21 @@ type DetailRow = {
   }[];
 };
 
+function toFileRow(f: DetailRow["assignment_files"][number]): FileRow {
+  return {
+    id: f.id,
+    originalName: f.original_name,
+    objectPath: f.object_path,
+    sizeBytes: Number(f.size_bytes),
+    createdAt: f.created_at,
+  };
+}
+
 export async function getHomeworkForTeacher(client: SupabaseClient, id: string): Promise<TeacherHomeworkDetail | null> {
   const { data, error } = await client
     .from("assignments")
     .select(
-      "id, title, instructions, max_marks, visible_from, due_at, assignment_files(id, purpose, original_name, object_path, size_bytes, created_at)",
+      "id, title, instructions, max_marks, visible_from, due_at, solution_unlocked_for_all, assignment_files(id, purpose, original_name, object_path, size_bytes, created_at)",
     )
     .eq("id", id)
     .eq("kind", "homework")
@@ -125,15 +136,9 @@ export async function getHomeworkForTeacher(client: SupabaseClient, id: string):
     dueAt: a.due_at,
     isVisible: new Date(a.visible_from).getTime() <= Date.now(),
     anySubmission: students.some((s) => s.hasSubmission),
-    files: a.assignment_files
-      .filter((f) => f.purpose === "question")
-      .map((f) => ({
-        id: f.id,
-        originalName: f.original_name,
-        objectPath: f.object_path,
-        sizeBytes: Number(f.size_bytes),
-        createdAt: f.created_at,
-      })),
+    files: a.assignment_files.filter((f) => f.purpose === "question").map(toFileRow),
+    solution: a.assignment_files.filter((f) => f.purpose === "solution").map(toFileRow)[0] ?? null,
+    solutionUnlockedForAll: a.solution_unlocked_for_all === true,
     students,
   };
 }

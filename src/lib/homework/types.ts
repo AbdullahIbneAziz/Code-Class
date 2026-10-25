@@ -44,6 +44,8 @@ export type TeacherHomeworkDetail = {
   isVisible: boolean;
   anySubmission: boolean;
   files: FileRow[];
+  solution: FileRow | null;
+  solutionUnlockedForAll: boolean;
   students: StudentItem[];
 };
 
