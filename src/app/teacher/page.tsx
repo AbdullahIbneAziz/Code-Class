@@ -17,13 +17,13 @@ const cell = "px-2 py-1 text-left";
 
 export default async function TeacherHome() {
   const client = await createServerSupabase();
+  await connection();
+  const now = new Date();
   const [queue, glance, homework] = await Promise.all([
     listMarkingQueue(client),
     listStudentsAtAGlance(client),
-    listHomeworkStatus(client, 5),
+    listHomeworkStatus(client, 5, now),
   ]);
-  await connection();
-  const now = new Date();
 
   return (
     <main>
@@ -97,7 +97,7 @@ export default async function TeacherHome() {
                 Due <UkTime at={h.dueAt} teacher />
               </p>
               <p className="mt-1 text-sm">
-                {h.students.map((s) => `${s.studentName}: ${itemLabel(s)}`).join(" · ")}
+                {h.students.map((s) => `${s.studentName}${s.studentIsActive ? "" : " (inactive)"}: ${itemLabel(s)}`).join(" · ")}
               </p>
               <p className="mt-1 text-sm">Solution: {h.solutionUploaded ? "uploaded" : "not uploaded"}</p>
               <UnlockSolution assignmentId={h.id} unlocked={h.solutionUnlockedForAll} />

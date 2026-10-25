@@ -121,7 +121,7 @@ test("a new student with no items shows zeros and dashes", async ({ page }) => {
 test("homework status lists the seeded homework with each student's status and the solution state, and Unlock works there", async ({
   page,
 }) => {
-  const s = await seed();
+  const s = await seed({ visible_from: ago(3), opens_at: ago(2), due_at: ago(1) });
   await adminSeedSolution(s.id, "t_sol.ipynb");
   await openDashboard(page);
   const section = page.locator("section", { has: page.getByRole("heading", { name: "Homework status" }) });

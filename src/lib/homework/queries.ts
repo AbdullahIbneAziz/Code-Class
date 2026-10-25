@@ -53,6 +53,15 @@ type DetailRow = {
   }[];
 };
 
+/** The earliest solution file by created_at, then id, so the pick is deterministic. */
+function solutionRow(files: DetailRow["assignment_files"]): FileRow | null {
+  const sorted = [...files].sort(
+    (x, y) => x.created_at.localeCompare(y.created_at) || x.id.localeCompare(y.id),
+  );
+  const f = sorted.find((x) => x.purpose === "solution");
+  return f ? toFileRow(f) : null;
+}
+
 function toFileRow(f: DetailRow["assignment_files"][number]): FileRow {
   return {
     id: f.id,
@@ -94,7 +103,7 @@ export async function getHomeworkForTeacher(client: SupabaseClient, id: string):
     isVisible: new Date(a.visible_from).getTime() <= Date.now(),
     anySubmission: students.some((s) => s.hasSubmission),
     files: a.assignment_files.filter((f) => f.purpose === "question").map(toFileRow),
-    solution: a.assignment_files.filter((f) => f.purpose === "solution").map(toFileRow)[0] ?? null,
+    solution: solutionRow(a.assignment_files),
     solutionUnlockedForAll: a.solution_unlocked_for_all === true,
     students,
   };
@@ -162,7 +171,8 @@ export async function listMySolutions(client: SupabaseClient, assignmentIds: str
     .select("id, assignment_id, original_name, object_path, size_bytes, created_at")
     .eq("purpose", "solution")
     .in("assignment_id", assignmentIds)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
   if (error) throw new Error(`Could not load solutions: ${error.message}`);
   for (const f of data ?? []) {
     if (out.has(f.assignment_id)) continue;
@@ -179,12 +189,13 @@ type StatusRow = {
   assignment_files: { purpose: string }[];
 };
 
-/** The latest homeworks by deadline, each with every student's row. */
-export async function listHomeworkStatus(client: SupabaseClient, limit: number): Promise<HomeworkStatus[]> {
+/** The most recently due homeworks (deadline already passed at `now`), each with every student's row. */
+export async function listHomeworkStatus(client: SupabaseClient, limit: number, now: Date): Promise<HomeworkStatus[]> {
   const { data, error } = await client
     .from("assignments")
     .select("id, title, due_at, solution_unlocked_for_all, assignment_files(purpose)")
     .eq("kind", "homework")
+    .lte("due_at", now.toISOString())
     .order("due_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(`Could not load homework: ${error.message}`);

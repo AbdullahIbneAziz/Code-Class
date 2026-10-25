@@ -166,7 +166,7 @@ Unlocking cannot be undone. Even after you unlock, each student still waits for 
 
 ## Progress numbers
 
-The teacher dashboard (**Students at a glance**), the student's home page and the student's **Progress** page (`/progress`) all show the same numbers.
+The teacher dashboard (**Students at a glance**), the student's home page and the student's **My Progress** page (`/progress`) all show the same numbers.
 
 - Late work counts in **Submitted** too.
 - Missed work counts as 0%.
