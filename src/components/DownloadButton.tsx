@@ -9,11 +9,13 @@ export function DownloadButton({
   objectPath,
   downloadName,
   label = "Download",
+  onDownload,
 }: {
   bucket: string;
   objectPath: string;
   downloadName: string;
   label?: string;
+  onDownload?: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,10 @@ export function DownloadButton({
           setError(null);
           const r = await signedDownloadUrl(createBrowserSupabase(), bucket, objectPath, downloadName);
           setBusy(false);
-          if (r.ok) window.location.assign(r.url);
+          if (r.ok) {
+            onDownload?.();
+            window.location.assign(r.url);
+          }
           else setError(r.message);
         }}
       >

@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { connection } from "next/server";
 import type { FileRow } from "@/lib/files/types";
+import { mapStudentItem, type ItemRow } from "./map";
 import type { StudentItem, TeacherHomework, TeacherHomeworkDetail } from "./types";
+
+export { mapStudentItem };
 
 type ListRow = {
   id: string;
@@ -30,52 +33,6 @@ export async function listHomeworkForTeacher(client: SupabaseClient): Promise<Te
     studentCount: r.assignment_students[0]?.count ?? 0,
     submittedCount: r.submissions[0]?.count ?? 0,
   }));
-}
-
-type ItemRow = {
-  assignment_id: string;
-  student_id: string;
-  student_name: string;
-  kind: "homework" | "test";
-  title: string;
-  instructions: string | null;
-  max_marks: number | string;
-  visible_from: string;
-  effective_opens_at: string;
-  effective_due_at: string;
-  action_state: StudentItem["actionState"];
-  is_excused: boolean;
-  has_submission: boolean;
-  is_late: boolean;
-  is_marked: boolean;
-  submitted_at: string | null;
-  submission_name: string | null;
-  submission_path: string | null;
-  revision: number | null;
-};
-
-export function mapStudentItem(r: ItemRow): StudentItem {
-  return {
-    assignmentId: r.assignment_id,
-    studentId: r.student_id,
-    studentName: r.student_name,
-    kind: r.kind,
-    title: r.title,
-    instructions: r.instructions,
-    maxMarks: Number(r.max_marks),
-    visibleFrom: r.visible_from,
-    effectiveOpensAt: r.effective_opens_at,
-    effectiveDueAt: r.effective_due_at,
-    actionState: r.action_state,
-    isExcused: r.is_excused,
-    hasSubmission: r.has_submission,
-    isLate: r.is_late,
-    isMarked: r.is_marked,
-    submittedAt: r.submitted_at,
-    submissionName: r.submission_name,
-    submissionPath: r.submission_path,
-    revision: r.revision,
-  };
 }
 
 type DetailRow = {

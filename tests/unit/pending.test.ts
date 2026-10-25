@@ -22,6 +22,13 @@ const base: StudentItem = {
   submissionName: null,
   submissionPath: null,
   revision: null,
+  submissionId: null,
+  mark: null,
+  feedback: null,
+  markedAt: null,
+  scorePct: null,
+  solutionUnlockedForAll: false,
+  studentIsActive: true,
 };
 const item = (id: string, over: Partial<StudentItem>): StudentItem => ({ ...base, assignmentId: id, ...over });
 

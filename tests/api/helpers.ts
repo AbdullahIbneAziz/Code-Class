@@ -73,7 +73,7 @@ export type TestUser = { id: string; username: string; password: string; client:
 
 export async function makeTestUser(
   role: "teacher" | "student",
-  o: { isActive?: boolean; mustChangePassword?: boolean } = {},
+  o: { isActive?: boolean; mustChangePassword?: boolean; displayName?: string } = {},
 ): Promise<TestUser> {
   const admin = adminClient();
   const username = `t_${role}_${randomBytes(3).toString("hex")}`;
@@ -90,7 +90,7 @@ export async function makeTestUser(
     id,
     role,
     username,
-    display_name: `Test ${role}`,
+    display_name: o.displayName ?? `Test ${role}`,
     is_active: o.isActive ?? true,
     must_change_password: o.mustChangePassword ?? false,
   });
@@ -136,6 +136,45 @@ export async function adminAssign(assignmentId: string, studentId: string): Prom
     .from("assignment_students")
     .insert({ assignment_id: assignmentId, student_id: studentId });
   if (error) throw new Error(`assign failed: ${error.message}`);
+}
+
+/** Inserts a submission row (and a small .ipynb object) as the admin. Cleanup is registered before the upload. */
+export async function adminSeedSubmission(
+  assignmentId: string,
+  studentId: string,
+  o: {
+    submittedAt?: string;
+    revision?: number;
+    mark?: number | null;
+    feedback?: string | null;
+    markedAt?: string | null;
+    name?: string;
+  } = {},
+): Promise<{ id: string; objectPath: string }> {
+  const admin = adminClient();
+  const objectPath = `${assignmentId}/${studentId}/${randomUUID()}.ipynb`;
+  trackObject("submissions", objectPath);
+  const body = new Blob(['{"cells":[]}'], { type: "application/json" });
+  const { error: uErr } = await admin.storage.from("submissions").upload(objectPath, body, { upsert: false });
+  if (uErr) throw new Error(`seed upload failed: ${uErr.message}`);
+  const { data, error } = await admin
+    .from("submissions")
+    .insert({
+      assignment_id: assignmentId,
+      student_id: studentId,
+      original_name: o.name ?? "t_work.ipynb",
+      object_path: objectPath,
+      size_bytes: 12,
+      submitted_at: o.submittedAt ?? new Date().toISOString(),
+      revision: o.revision ?? 1,
+      mark: o.mark ?? null,
+      feedback: o.feedback ?? null,
+      marked_at: o.markedAt ?? null,
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(`seed submission failed: ${error.message}`);
+  return { id: data.id as string, objectPath };
 }
 
 export function fileOfSize(bytes: number): Blob {

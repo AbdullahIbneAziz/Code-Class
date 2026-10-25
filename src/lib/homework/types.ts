@@ -22,6 +22,13 @@ export type StudentItem = {
   submissionName: string | null;
   submissionPath: string | null;
   revision: number | null;
+  submissionId: string | null;
+  mark: number | null;
+  feedback: string | null;
+  markedAt: string | null;
+  scorePct: number | null;
+  solutionUnlockedForAll: boolean;
+  studentIsActive: boolean;
 };
 
 export type TeacherHomework = {

@@ -17,6 +17,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
           { href: "/teacher", label: "Dashboard" },
           { href: "/teacher/lectures", label: "Lectures" },
           { href: "/teacher/homework", label: "Homework" },
+          { href: "/teacher/marking", label: "Marking" },
           { href: "/teacher/students", label: "Students" },
         ]}
       />
