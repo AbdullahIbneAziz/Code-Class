@@ -60,3 +60,12 @@ export type HomeworkFormState =
   | { ok: true; id: string }
   | { ok: false; message: string; zoneChoice?: ("visibleFrom" | "due")[] }
   | null;
+
+export type HomeworkStatus = {
+  id: string;
+  title: string;
+  dueAt: string;
+  solutionUploaded: boolean;
+  solutionUnlockedForAll: boolean;
+  students: StudentItem[];
+};

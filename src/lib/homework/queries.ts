@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { connection } from "next/server";
 import type { FileRow } from "@/lib/files/types";
 import { mapStudentItem, type ItemRow } from "./map";
-import type { StudentItem, TeacherHomework, TeacherHomeworkDetail } from "./types";
+import type { HomeworkStatus, StudentItem, TeacherHomework, TeacherHomeworkDetail } from "./types";
 
 export { mapStudentItem };
 
@@ -169,4 +169,40 @@ export async function listMySolutions(client: SupabaseClient, assignmentIds: str
     out.set(f.assignment_id, toFileRow({ ...f, purpose: "solution" }));
   }
   return out;
+}
+
+type StatusRow = {
+  id: string;
+  title: string;
+  due_at: string;
+  solution_unlocked_for_all: boolean;
+  assignment_files: { purpose: string }[];
+};
+
+/** The latest homeworks by deadline, each with every student's row. */
+export async function listHomeworkStatus(client: SupabaseClient, limit: number): Promise<HomeworkStatus[]> {
+  const { data, error } = await client
+    .from("assignments")
+    .select("id, title, due_at, solution_unlocked_for_all, assignment_files(purpose)")
+    .eq("kind", "homework")
+    .order("due_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Could not load homework: ${error.message}`);
+  const rows = (data ?? []) as unknown as StatusRow[];
+  if (rows.length === 0) return [];
+  const { data: items, error: iErr } = await client
+    .from("student_items")
+    .select("*")
+    .in("assignment_id", rows.map((r) => r.id))
+    .order("student_name");
+  if (iErr) throw new Error(`Could not load students: ${iErr.message}`);
+  const mapped = ((items ?? []) as unknown as ItemRow[]).map(mapStudentItem);
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    dueAt: r.due_at,
+    solutionUploaded: r.assignment_files.some((f) => f.purpose === "solution"),
+    solutionUnlockedForAll: r.solution_unlocked_for_all === true,
+    students: mapped.filter((s) => s.assignmentId === r.id),
+  }));
 }
