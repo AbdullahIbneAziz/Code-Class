@@ -458,40 +458,88 @@ describe("lock then clock (committed, two sessions)", () => {
   it("update_assignment waiting on a lock past visible_from is refused", async () => {
     let teacher = "";
     let a = "";
-    let nv = new Date();
     await withCommitted(
       async (c, track) => {
         teacher = await seedUser(c, { role: "teacher", username: "t_cm_teacher" });
         track.userIds.push(teacher);
         const s = await seedUser(c, { role: "student", username: "t_cm_student" });
         track.userIds.push(s);
-        const v = (await c.query("select clock_timestamp() + interval '2 seconds' as v")).rows[0].v as Date;
-        a = await seedAssignment(c, { title: "t_cm_hw", visible_from: v.toISOString(), opens_at: v.toISOString(), due_at: at(7 * DAY).toISOString() });
+        // Placeholder times; visible_from is set below, after both sessions are connected.
+        a = await seedAssignment(c, { title: "t_cm_hw", due_at: at(7 * DAY).toISOString() });
         track.assignmentIds.push(a);
         await assign(c, a, s);
-        nv = new Date(v.getTime() + HOUR);
       },
       async () => {
         const A = await session();
         const B = await session();
         try {
+          await B.query("select 1"); // warm both connections before the clock starts
+          await A.query("select 1");
+          const v = (await A.query("select clock_timestamp() + interval '4 seconds' as v")).rows[0].v as Date;
+          await A.query("update public.assignments set visible_from = $2, opens_at = $2 where id = $1", [a, v]);
           const cur = (await A.query("select * from public.assignments where id = $1", [a])).rows[0];
+          const nv = new Date(v.getTime() + HOUR);
           await A.query("begin");
           await A.query("select 1 from public.assignment_students where assignment_id = $1 for update", [a]);
           await B.query("begin");
           await actAs(B, teacher);
+          // B's transaction clock and the real clock are both still before visible_from when B calls.
+          const pre = (await B.query("select clock_timestamp() < $1::timestamptz as c, now() < $1::timestamptz as n", [v])).rows[0];
+          expect(pre, "B must start before visible_from").toEqual({ c: true, n: true });
           const pending = B.query(UPD_SQL, [a, cur.title, null, cur.max_marks, nv, nv, cur.due_at]).then(
             () => undefined,
             (e: Error) => e,
           );
-          await new Promise((r) => setTimeout(r, 500));
-          await A.query("select pg_sleep(3)");
+          await new Promise((r) => setTimeout(r, 300));
+          await A.query("select pg_sleep(5)");
           await A.query("commit");
           const e = await pending;
           expect(e?.message).toBe(MSG.shown);
           await B.query("rollback");
           const row = (await A.query("select visible_from from public.assignments where id = $1", [a])).rows[0];
           expect(row.visible_from.getTime()).toBe(cur.visible_from.getTime());
+        } finally {
+          await A.query("rollback").catch(() => {});
+          await B.query("rollback").catch(() => {});
+          A.release();
+          B.release();
+        }
+      },
+    );
+  });
+
+  it("update_assignment holds no lock that blocks a FOR KEY SHARE on the assignment (finalize FK check)", async () => {
+    let teacher = "";
+    let a = "";
+    await withCommitted(
+      async (c, track) => {
+        teacher = await seedUser(c, { role: "teacher", username: "t_cm_teacher" });
+        track.userIds.push(teacher);
+        const s = await seedUser(c, { role: "student", username: "t_cm_student" });
+        track.userIds.push(s);
+        a = await seedAssignment(c, { title: "t_cm_keyshare" });
+        track.assignmentIds.push(a);
+        await assign(c, a, s);
+      },
+      async () => {
+        const A = await session(); // plays update_assignment's caller, holding the assignment lock
+        const B = await session(); // plays finalize's FK check
+        try {
+          const cur = (await A.query("select * from public.assignments where id = $1", [a])).rows[0];
+          await A.query("begin");
+          await actAs(A, teacher);
+          // Lock the assignment exactly as update_assignment does, then run it; the tx stays open.
+          await A.query(UPD_SQL, [a, "t_cm_keyshare2", null, cur.max_marks, cur.visible_from, cur.opens_at, cur.due_at]);
+          await B.query("begin");
+          await B.query("set local lock_timeout = '2s'");
+          await B.query("select 1 from public.assignments where id = $1 for key share", [a]); // must not block
+          await B.query("rollback");
+          // Sanity: FOR UPDATE would conflict, so the test does distinguish the lock modes.
+          await B.query("begin");
+          await B.query("set local lock_timeout = '500ms'");
+          await expect(B.query("select 1 from public.assignments where id = $1 for update", [a])).rejects.toThrow(/lock timeout/);
+          await B.query("rollback");
+          await A.query("rollback");
         } finally {
           await A.query("rollback").catch(() => {});
           await B.query("rollback").catch(() => {});
@@ -538,6 +586,7 @@ describe("lock then clock (committed, two sessions)", () => {
           const pending = B.query("select public.replace_file('question', $1, $2, 'new.pdf')", [fileId, newPath]).then(() => {
             done = true;
           });
+          pending.catch(() => {});
           await new Promise((r) => setTimeout(r, 1500));
           expect(done, "replace_file must wait for the parent assignment lock").toBe(false);
           await A.query("commit");

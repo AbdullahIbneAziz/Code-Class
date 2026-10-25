@@ -39,6 +39,9 @@ export async function withCommitted<T>(
   run: (track: Committed) => Promise<T>,
 ): Promise<T> {
   const track: Committed = { userIds: [], assignmentIds: [], objects: [] };
+  let result: T | undefined;
+  let runError: unknown;
+  let ran = false;
   try {
     const c = await getPool().connect();
     try {
@@ -46,32 +49,46 @@ export async function withCommitted<T>(
     } finally {
       c.release();
     }
-    return await run(track);
-  } finally {
-    const errors: string[] = [];
+    result = await run(track);
+    ran = true;
+  } catch (e) {
+    runError = e;
+  }
+  const errors: Error[] = [];
+  const step = async (label: string, fn: () => Promise<void>) => {
+    try {
+      await fn();
+    } catch (e) {
+      errors.push(new Error(`committed cleanup (${label}): ${(e as Error).message}`));
+    }
+  };
+  const q = async (sql: string, params: unknown[]) => {
     const c = await getPool().connect();
     try {
-      for (const b of [...new Set(track.objects.map((o) => o.bucket))]) {
-        const names = track.objects.filter((o) => o.bucket === b).map((o) => o.name);
-        const { error } = await admin().storage.from(b).remove(names);
-        if (error) errors.push(`remove ${b}: ${error.message}`);
-      }
-      if (track.objects.length) {
-        await c.query("delete from public.replaced_files where object_path = any($1::text[])", [
-          track.objects.map((o) => o.name),
-        ]);
-      }
-      if (track.assignmentIds.length) {
-        await c.query("delete from public.assignments where id = any($1::uuid[])", [track.assignmentIds]);
-      }
-      if (track.userIds.length) {
-        await c.query("delete from auth.users where id = any($1::uuid[])", [track.userIds]);
-      }
-    } catch (e) {
-      errors.push((e as Error).message);
+      await c.query(sql, params);
     } finally {
       c.release();
     }
-    if (errors.length) console.error("committed cleanup problems:", errors.join("; "));
+  };
+  for (const b of [...new Set(track.objects.map((o) => o.bucket))]) {
+    await step(`storage ${b}`, async () => {
+      const names = track.objects.filter((o) => o.bucket === b).map((o) => o.name);
+      const { error } = await admin().storage.from(b).remove(names);
+      if (error) throw new Error(error.message);
+    });
   }
+  if (track.objects.length) {
+    await step("replaced_files", () =>
+      q("delete from public.replaced_files where object_path = any($1::text[])", [track.objects.map((o) => o.name)]),
+    );
+  }
+  if (track.assignmentIds.length) {
+    await step("assignments", () => q("delete from public.assignments where id = any($1::uuid[])", [track.assignmentIds]));
+  }
+  if (track.userIds.length) {
+    await step("users", () => q("delete from auth.users where id = any($1::uuid[])", [track.userIds]));
+  }
+  if (!ran) throw runError;
+  if (errors.length) throw errors[0];
+  return result as T;
 }
