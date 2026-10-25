@@ -25,6 +25,22 @@ export async function uploadObject(track: Committed, bucket: string, name: strin
   if (error) throw new Error(`upload ${bucket}/${name}: ${error.message}`);
 }
 
+/** Resolves once the backend `pid` is waiting on a lock; throws on timeout. Proves a second session really waited. */
+export async function waitUntilBlocked(pid: number, timeoutMs = 5000): Promise<void> {
+  const c = await getPool().connect();
+  try {
+    const end = Date.now() + timeoutMs;
+    for (;;) {
+      const r = await c.query("select 1 from pg_stat_activity where pid = $1 and wait_event_type = 'Lock'", [pid]);
+      if (r.rows.length) return;
+      if (Date.now() > end) throw new Error(`backend ${pid} was not blocked on a lock within ${timeoutMs} ms`);
+      await new Promise((r2) => setTimeout(r2, 50));
+    }
+  } finally {
+    c.release();
+  }
+}
+
 /** A raw pool client; the caller runs begin/actAs/... and must release it. */
 export async function session(): Promise<pg.PoolClient> {
   return getPool().connect();

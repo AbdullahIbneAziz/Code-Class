@@ -471,3 +471,15 @@ describe("touch_last_seen", () => {
       expect(def).not.toContain("visible_from");
     }));
 });
+
+describe("solutions storage policy", () => {
+  it("solutions storage policy requires a live solution row (single source)", () =>
+    withTx(async (c) => {
+      const r = await c.query(
+        "select qual from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'solutions_student_select'",
+      );
+      expect(r.rows).toHaveLength(1);
+      expect(r.rows[0].qual).toContain("can_read_solution");
+      expect(r.rows[0].qual).toContain("assignment_files");
+    }));
+});

@@ -215,3 +215,44 @@ describe("storage policies", () => {
     expect([400, 403]).toContain((await fetch(data!.signedUrl)).status);
   });
 });
+
+describe("solutions live rows", () => {
+  it("students can sign the live solution after their deadline but not a replaced or never-attached one", async () => {
+    const hw = await adminSeedAssignment({
+      kind: "homework",
+      visible_from: new Date(Date.now() - 3 * HOUR).toISOString(),
+      opens_at: new Date(Date.now() - 2 * HOUR).toISOString(),
+      due_at: new Date(Date.now() - HOUR).toISOString(),
+    });
+    await adminAssign(hw, s1.id);
+    await adminAssign(hw, s2.id);
+    // s1 has an admin-inserted submission (so the solution opens for them after the deadline)
+    const { error: subErr } = await adminClient().from("submissions").insert({
+      assignment_id: hw,
+      student_id: s1.id,
+      original_name: "t_sub.py",
+      object_path: `${hw}/${s1.id}/${uuid()}.py`,
+      size_bytes: 1,
+      submitted_at: new Date(Date.now() - 2 * HOUR).toISOString(),
+    });
+    expect(subErr).toBeNull();
+
+    const oldS = `${hw}/${uuid()}.pdf`;
+    const newS = `${hw}/${uuid()}.pdf`;
+    const loose = `${hw}/${uuid()}.pdf`;
+    for (const p of [oldS, newS, loose]) expect((await put(teacher, "solutions", p, fileOfSize(10))).error).toBeNull();
+    const att = await teacher.client.rpc("attach_file", {
+      p_target: "solution", p_parent_id: hw, p_object_path: oldS, p_original_name: "t_old.pdf",
+    });
+    expect(att.error).toBeNull();
+    expect((await s1.client.storage.from("solutions").createSignedUrl(oldS, 60)).error).toBeNull();
+    const rep = await teacher.client.rpc("replace_file", {
+      p_target: "solution", p_file_id: att.data, p_object_path: newS, p_original_name: "t_new.pdf",
+    });
+    expect(rep.error).toBeNull();
+    expect((await s1.client.storage.from("solutions").createSignedUrl(oldS, 60)).error).not.toBeNull();
+    expect((await s1.client.storage.from("solutions").createSignedUrl(newS, 60)).error).toBeNull();
+    expect((await s1.client.storage.from("solutions").createSignedUrl(loose, 60)).error).not.toBeNull();
+    expect((await s2.client.storage.from("solutions").createSignedUrl(newS, 60)).error).not.toBeNull();
+  });
+});
