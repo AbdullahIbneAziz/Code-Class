@@ -29,7 +29,7 @@ test("student visiting /teacher is sent to /", async ({ page }) => {
   await expectPath(page, "/");
   await page.goto("/teacher");
   await expectPath(page, "/");
-  await expect(page.getByText("Your homework will appear here.")).toBeVisible();
+  await expect(page.getByText("You're all caught up.")).toBeVisible();
 });
 
 test("teacher visiting / is sent to /teacher", async ({ page }) => {
@@ -78,7 +78,7 @@ test("first login forces new password, then lands on home; the next login goes s
   await page.getByLabel("Confirm new password").fill(next);
   await page.getByRole("button", { name: "Change password" }).click();
   await expectPath(page, "/");
-  await expect(page.getByText("Your homework will appear here.")).toBeVisible();
+  await expect(page.getByText("You're all caught up.")).toBeVisible();
 
   const ctx = await browser.newContext();
   const p2 = await ctx.newPage();
