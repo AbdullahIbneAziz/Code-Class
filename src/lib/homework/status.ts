@@ -15,3 +15,8 @@ export function statusLabel(
       return "Pending";
   }
 }
+
+/** Request-time clock check for display only; the database enforces the real deadline. */
+export function hasPassed(iso: string): boolean {
+  return new Date(iso).getTime() <= Date.now();
+}

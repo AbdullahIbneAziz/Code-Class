@@ -3,7 +3,8 @@ import { DownloadButton } from "@/components/DownloadButton";
 import { UkTime } from "@/components/UkTime";
 import { BUCKET } from "@/lib/files/rules";
 import { getMyItem, listQuestionFiles } from "@/lib/homework/queries";
-import { statusLabel } from "@/lib/homework/status";
+import { hasPassed, statusLabel } from "@/lib/homework/status";
+import { SubmitPanel } from "./SubmitPanel";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -35,9 +36,7 @@ export default async function StudentHomeworkDetail({ params }: { params: Promis
           ))}
         </ul>
       </section>
-      <section className="mt-6" aria-label="Your work">
-        {/* Upload and finalize UI arrives in Task 9. */}
-      </section>
+      <SubmitPanel item={item} deadlinePassed={hasPassed(item.effectiveDueAt)} />
     </main>
   );
 }
