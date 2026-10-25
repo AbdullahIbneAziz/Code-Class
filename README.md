@@ -16,7 +16,7 @@ Phase 2 included:
 - Homework: the teacher creates it, schedules when it appears, chooses which students get it, attaches question files, edits it under fixed rules and deletes it.
 - UK time entry, with BD time shown beside it on teacher screens.
 - Student homework list and detail pages with downloads. Hidden or unassigned homework simply shows "not found".
-- Student upload: on time, late, replace until marked, and missed work.
+- Student upload: on time, late, replace until marked or the deadline passes, and missed work.
 - A student home page with a "pending homework" banner.
 
 Phase 3 (current) includes:

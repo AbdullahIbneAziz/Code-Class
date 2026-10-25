@@ -608,8 +608,8 @@ reject unless:
   t ≥ effective_opens_at                              → "not open yet"
   kind = 'test' → t < effective_due_at                → "test closed"
   existing submission not marked                      → "already marked"
-  existing submission on time AND t ≥ effective_due_at
-                                                      → "can't replace after deadline"
+  existing submission AND t ≥ effective_due_at        → on-time copy if it was on time,
+                                                        otherwise the late copy
 upsert submission: object_path, original_name, size, submitted_at = t,
                    revision = revision + 1 (or 1), mark/feedback cleared
 if there was a previous object_path → insert into replaced_files
