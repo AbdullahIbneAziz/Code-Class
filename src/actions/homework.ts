@@ -1,23 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireTeacher } from "@/lib/accounts/guard";
+import { teacherClient } from "@/lib/accounts/teacher-client";
 import { rpcErrorMessage, type ActionResult } from "@/lib/db/errors";
 import type { HomeworkFormState } from "@/lib/homework/types";
-import { createServerSupabase } from "@/lib/supabase/server";
 import { readUkField } from "@/lib/time/form";
-
-const NOPE = { ok: false as const, message: "You don't have permission to do that." };
-
-async function teacherClient() {
-  const client = await createServerSupabase();
-  try {
-    await requireTeacher(client);
-  } catch {
-    return null;
-  }
-  return client;
-}
 
 function refresh(id?: string) {
   revalidatePath("/teacher/homework");
@@ -55,8 +42,9 @@ function maxMarks(fd: FormData): number {
 }
 
 export async function createHomeworkAction(fd: FormData): Promise<HomeworkFormState> {
-  const client = await teacherClient();
-  if (!client) return NOPE;
+  const gate = await teacherClient();
+  if (!gate.ok) return gate;
+  const client = gate.client;
   const times = readTimes(fd);
   if (!times.ok) return times;
   const studentIds = fd.getAll("studentIds").filter((x): x is string => typeof x === "string");
@@ -76,8 +64,9 @@ export async function createHomeworkAction(fd: FormData): Promise<HomeworkFormSt
 }
 
 export async function updateHomeworkAction(fd: FormData): Promise<HomeworkFormState> {
-  const client = await teacherClient();
-  if (!client) return NOPE;
+  const gate = await teacherClient();
+  if (!gate.ok) return gate;
+  const client = gate.client;
   const id = str(fd, "id");
   const times = readTimes(fd);
   if (!times.ok) return times;
@@ -96,8 +85,9 @@ export async function updateHomeworkAction(fd: FormData): Promise<HomeworkFormSt
 }
 
 export async function deleteHomeworkAction(id: string): Promise<ActionResult> {
-  const client = await teacherClient();
-  if (!client) return NOPE;
+  const gate = await teacherClient();
+  if (!gate.ok) return gate;
+  const client = gate.client;
   const { error } = await client.rpc("delete_assignment", { p_assignment_id: id });
   if (error) return { ok: false, message: rpcErrorMessage(error) };
   refresh();
@@ -105,8 +95,9 @@ export async function deleteHomeworkAction(id: string): Promise<ActionResult> {
 }
 
 export async function setHomeworkStudentsAction(id: string, studentIds: string[]): Promise<ActionResult> {
-  const client = await teacherClient();
-  if (!client) return NOPE;
+  const gate = await teacherClient();
+  if (!gate.ok) return gate;
+  const client = gate.client;
   const { error } = await client.rpc("set_assignment_students", { p_assignment_id: id, p_student_ids: studentIds });
   if (error) return { ok: false, message: rpcErrorMessage(error) };
   refresh(id);
