@@ -130,3 +130,13 @@ export function dueLabel(due: Date, now: Date): string {
   if (diff === -1) return "was due yesterday";
   return `was due ${day}`;
 }
+
+/** "Never", "Today, 6:40 PM", "Yesterday, 6:40 PM" or "{n} days ago", by UK calendar day. */
+export function lastSeenLabel(at: Date | null, now: Date): string {
+  if (!at) return "Never";
+  const diff = ukDayNumber(now) - ukDayNumber(at);
+  const clock = clock12(wall(at, UK_TZ));
+  if (diff <= 0) return `Today, ${clock}`;
+  if (diff === 1) return `Yesterday, ${clock}`;
+  return `${diff} days ago`;
+}

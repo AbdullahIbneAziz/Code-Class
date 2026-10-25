@@ -7,6 +7,7 @@ import {
   formatBd,
   formatUk,
   formatUkWithZone,
+  lastSeenLabel,
   parseUkLocal,
   toUkInputParts,
   ukZoneAt,
@@ -84,6 +85,29 @@ describe("dueLabel", () => {
   });
   it("uses UK calendar days", () => {
     expect(dueLabel(new Date("2026-10-22T19:00:00Z"), new Date("2026-10-21T23:30:00Z"))).toBe("Due today, 8:00 PM");
+  });
+});
+
+function lastSeenCases() {
+  const now = new Date("2026-10-21T12:00:00Z");
+  expect(lastSeenLabel(null, now)).toBe("Never");
+  expect(lastSeenLabel(new Date("2026-10-21T05:40:00Z"), now)).toBe("Today, 6:40 AM");
+  expect(lastSeenLabel(new Date("2026-10-20T22:30:00Z"), now)).toBe("Yesterday, 11:30 PM");
+  expect(lastSeenLabel(new Date("2026-10-18T12:00:00Z"), now)).toBe("3 days ago");
+  expect(lastSeenLabel(new Date("2026-10-21T22:00:00Z"), new Date("2026-10-21T23:30:00Z"))).toBe("Yesterday, 11:00 PM");
+}
+
+describe("lastSeenLabel", () => {
+  it("labels by UK calendar day", lastSeenCases);
+  it("same output under TZ=Asia/Dhaka", () => {
+    const original = process.env.TZ;
+    process.env.TZ = "Asia/Dhaka";
+    try {
+      lastSeenCases();
+    } finally {
+      if (original === undefined) delete process.env.TZ;
+      else process.env.TZ = original;
+    }
   });
 });
 
