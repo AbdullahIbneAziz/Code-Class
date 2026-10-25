@@ -138,4 +138,5 @@ test("late submission shows the late lock note and no upload form", async ({ pag
   await open(page, hw.id);
   await expect(page.getByText("Your late submission is locked because the deadline has passed.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Upload" })).toHaveCount(0);
+  await expect(page.getByLabel(LABEL)).toHaveCount(0);
 });

@@ -156,7 +156,7 @@ All times you type are UK time. On teacher screens the same moment in Bangladesh
 - The home page starts with a banner such as "⚠ You have 2 pending homeworks" ("1 pending homework" for one).
 - Each homework shows as pending, on time, late or missed.
 - A student uploads a `.ipynb` or `.py` file (up to 5 MB). Before the deadline it counts as on time; after it, late.
-- A student can replace their file until you mark it.
+- A student can replace their file until you mark it or their deadline passes.
 - After the deadline, whatever was uploaded is final, whether it was on time or late, so it cannot be swapped for a different file later. A student who has not uploaded yet can still make a first (late) upload. If a student needs to fix a mistake, give them extra time (coming in Phase 5).
 - If nothing is uploaded by the deadline, the homework shows as missed.
 

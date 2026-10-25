@@ -183,6 +183,7 @@ describe("finalize_submission: stores the submission", () => {
       await fin(c, a, p1);
       await c.query("reset role");
       await c.query("update public.assignments set due_at = now() - interval '1 hour' where id = $1", [a]);
+      await c.query("update public.submissions set submitted_at = now() - interval '2 hours' where assignment_id = $1", [a]);
       await as(c, s);
       const e = await refused(c, FIN, [a, p2, "hw.ipynb"]);
       expect(e?.message).toBe(MSG.ontime);
@@ -244,6 +245,10 @@ describe("finalize_submission: stores the submission", () => {
       await as(c, s);
       const e = await refused(c, FIN, [a, p2, "hw.ipynb"]);
       expect(e?.message).toBe(MSG.marked);
+      const row = await subRow(c, a, s);
+      expect(row.revision).toBe(1);
+      expect(row.object_path).toBe(p1);
+      expect(Number(row.mark)).toBe(5);
     }));
 
   it("replacing clears nothing it should keep: a per-student deadline override is honoured", () =>
