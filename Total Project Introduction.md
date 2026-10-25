@@ -81,7 +81,7 @@ The full rules are in [ARCHITECTURE.md](ARCHITECTURE.md) §4.
 - **Homework:** uploads before the deadline are **on time**. Uploads after it are accepted but marked **late**. No upload after the deadline counts as **missed**. Homework submissions **never close**.
 - **Class tests:** questions are hidden until the start time. **At the end time, submission closes completely.** An upload must *finish* before the end time to count.
 - **Solutions:** a student sees a solution only after their own deadline **and** after they've submitted (or the teacher unlocks it for everyone, or the item is excused for them).
-- **Re-uploads:** allowed until the teacher marks the work. An on-time upload can't be replaced after the deadline.
+- **Re-uploads:** allowed until the teacher marks the work. No upload can be replaced after the student's deadline.
 - **Averages:** marked work plus missed work counted as 0%. Excused and not-yet-marked work isn't counted. There's no automatic penalty for late work.
 - **New students** only get work created after they join.
 

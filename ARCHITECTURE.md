@@ -233,7 +233,7 @@ Otherwise they see *"Submit your homework to unlock the solution."*
 
 ### 4.5 Re-uploading
 - 🔵 **MY CALL:** A student can **replace** their upload any number of times **until the teacher marks it**. After that it's locked.
-- 🔵 **MY CALL:** After their deadline, a student **can't replace** an upload that was on time. This stops an on-time submission from turning late by accident and stops anyone from swapping in a copy of the solution.
+- ✅ **DECIDED (26 Oct 2026):** After their own deadline, a student **can't replace** any upload, on time or late. This stops anyone from submitting junk late to unlock the solution and then swapping in a copy. A deadline extension for that student reopens replacing until the new deadline.
 - **Class tests:** replacing is allowed only inside the test window.
 
 ### 4.6 Exceptions for one student (if Decision 1 = yes)
@@ -931,7 +931,7 @@ All answered by the teacher on **24 October 2026**:
 - lateness worked out from the current deadline, so an extension can turn "late" into "on time" (§4.2)
 - no grace period at test end; the upload must be **finished and accepted at final validation** before the end time (§4.3)
 - "Unlock solution for everyone" still waits for each student's deadline (§4.4)
-- no replacing an on-time upload after the deadline (§4.5)
+- no replacing any upload after the student's own deadline (§4.5)
 - editing rules after publishing (§4.8)
 - missed = 0% in averages, late = no automatic penalty (§4.9)
 - 5 MB student / 25 MB teacher upload limits and allowed file types (§10.1)

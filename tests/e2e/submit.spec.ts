@@ -4,6 +4,7 @@ import {
   adminAssign,
   adminClient,
   adminSeedAssignment,
+  adminSeedSubmission,
   cleanupTestUsers,
   makeTestUser,
   trackAssignmentTitle,
@@ -129,4 +130,12 @@ test("deadline passes while the page is open: the upload is refused with the on-
   // The refused file is still chosen, so the student can retry or pick another.
   await expect.poll(() => input.evaluate((el: HTMLInputElement) => el.files?.[0]?.name)).toBe("t_second.ipynb");
   expect(rows[0].original_name).toBe("t_first.ipynb");
+});
+
+test("late submission shows the late lock note and no upload form", async ({ page }) => {
+  const hw = await seed({ due_at: new Date(Date.now() - 2 * HOUR).toISOString() });
+  await adminSeedSubmission(hw.id, student.id, { submittedAt: new Date(Date.now() - HOUR).toISOString() });
+  await open(page, hw.id);
+  await expect(page.getByText("Your late submission is locked because the deadline has passed.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Upload" })).toHaveCount(0);
 });

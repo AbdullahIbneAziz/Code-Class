@@ -24,7 +24,8 @@ export function SubmitPanel({ item, deadlinePassed = false }: { item: StudentIte
   const [busy, startTransition] = useTransition();
 
   const onTimeLocked = item.hasSubmission && !item.isLate && deadlinePassed;
-  const locked = item.isMarked || onTimeLocked;
+  const lateLocked = item.hasSubmission && item.isLate && deadlinePassed;
+  const locked = item.isMarked || onTimeLocked || lateLocked;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -79,6 +80,8 @@ export function SubmitPanel({ item, deadlinePassed = false }: { item: StudentIte
         <p className="mt-2 text-sm">Marked. Your file is locked.</p>
       ) : onTimeLocked ? (
         <p className="mt-2 text-sm">Your on-time submission is locked because the deadline has passed.</p>
+      ) : lateLocked ? (
+        <p className="mt-2 text-sm">Your late submission is locked because the deadline has passed.</p>
       ) : (
         <form onSubmit={onSubmit} className="mt-3 flex flex-col gap-2">
           <label className="text-sm" htmlFor="submission-file">

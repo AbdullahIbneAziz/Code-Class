@@ -19,6 +19,7 @@ const MSG = {
   closed: "The test has closed. Uploads that finish after the end time are not accepted.",
   marked: "This has already been marked, so it can't be replaced.",
   ontime: "Your on-time submission can't be replaced after the deadline.",
+  late: "This was uploaded after the deadline, so it can't be replaced.",
   upload: "That upload wasn't found. Please try again.",
   gone: "That item no longer exists.",
   delete: "This homework can't be deleted because someone has submitted.",
@@ -158,9 +159,39 @@ describe("finalize_submission: stores the submission", () => {
       expect((await subRow(c, a, s)).revision).toBe(1);
     }));
 
-  it("a late submission can still be replaced after the deadline", () =>
+  it("late submission can't be replaced after the deadline (new copy)", () =>
     withTx(async (c) => {
       const { s, a } = await setup(c, { due_at: at(-HOUR).toISOString() });
+      const p1 = await obj(c, a, s);
+      const p2 = await obj(c, a, s);
+      await as(c, s);
+      await fin(c, a, p1);
+      const e = await refused(c, FIN, [a, p2, "hw.ipynb"]);
+      expect(e?.code).toBe("P0001");
+      expect(e?.message).toBe(MSG.late);
+      const row = await subRow(c, a, s);
+      expect(row.revision).toBe(1);
+      expect(row.object_path).toBe(p1);
+    }));
+
+  it("on-time submission after the deadline still gets the on-time copy", () =>
+    withTx(async (c) => {
+      const { s, a } = await setup(c, { due_at: at(DAY).toISOString() });
+      const p1 = await obj(c, a, s);
+      const p2 = await obj(c, a, s);
+      await as(c, s);
+      await fin(c, a, p1);
+      await c.query("reset role");
+      await c.query("update public.assignments set due_at = now() - interval '1 hour' where id = $1", [a]);
+      await as(c, s);
+      const e = await refused(c, FIN, [a, p2, "hw.ipynb"]);
+      expect(e?.message).toBe(MSG.ontime);
+      expect((await subRow(c, a, s)).revision).toBe(1);
+    }));
+
+  it("before the deadline a submission can still be replaced", () =>
+    withTx(async (c) => {
+      const { s, a } = await setup(c, { due_at: at(DAY).toISOString() });
       const p1 = await obj(c, a, s);
       const p2 = await obj(c, a, s);
       await as(c, s);
@@ -169,6 +200,50 @@ describe("finalize_submission: stores the submission", () => {
       const row = await subRow(c, a, s);
       expect(row.revision).toBe(2);
       expect(row.object_path).toBe(p2);
+    }));
+
+  it("a first upload after the deadline is still accepted and late", () =>
+    withTx(async (c) => {
+      const { s, a } = await setup(c, { due_at: at(-HOUR).toISOString() });
+      const p = await obj(c, a, s);
+      await as(c, s);
+      await fin(c, a, p);
+      expect((await subRow(c, a, s)).revision).toBe(1);
+      expect(await isLate(c, a, s)).toBe(true);
+    }));
+
+  it("a due_at_override in the future reopens replacing of a late submission", () =>
+    withTx(async (c) => {
+      const { s, a } = await setup(c, { due_at: at(-HOUR).toISOString() });
+      const p1 = await obj(c, a, s);
+      const p2 = await obj(c, a, s);
+      await as(c, s);
+      await fin(c, a, p1);
+      await c.query("reset role");
+      await c.query("update public.assignment_students set due_at_override = $3 where assignment_id=$1 and student_id=$2", [
+        a,
+        s,
+        at(DAY).toISOString(),
+      ]);
+      await as(c, s);
+      await fin(c, a, p2);
+      const row = await subRow(c, a, s);
+      expect(row.revision).toBe(2);
+      expect(row.object_path).toBe(p2);
+    }));
+
+  it("marked still wins over the late lock", () =>
+    withTx(async (c) => {
+      const { s, a } = await setup(c, { due_at: at(-HOUR).toISOString() });
+      const p1 = await obj(c, a, s);
+      const p2 = await obj(c, a, s);
+      await as(c, s);
+      await fin(c, a, p1);
+      await c.query("reset role");
+      await c.query("update public.submissions set mark = 5, marked_at = now() where assignment_id=$1 and student_id=$2", [a, s]);
+      await as(c, s);
+      const e = await refused(c, FIN, [a, p2, "hw.ipynb"]);
+      expect(e?.message).toBe(MSG.marked);
     }));
 
   it("replacing clears nothing it should keep: a per-student deadline override is honoured", () =>
