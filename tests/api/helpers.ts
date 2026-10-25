@@ -29,6 +29,12 @@ export function trackObject(bucket: string, path: string): void {
 const trackedFolders: { bucket: string; folder: string }[] = [];
 const createdLectureIds: string[] = [];
 const lectureTitles: string[] = [];
+const assignmentTitles: string[] = [];
+
+/** Register an assignment TITLE before the UI creates it; cleanup resolves ids by title and removes rows + question objects. */
+export function trackAssignmentTitle(title: string): void {
+  assignmentTitles.push(title);
+}
 
 /** Register a lecture TITLE before the UI creates it; cleanup resolves ids by title and removes rows + objects. */
 export function trackLectureTitle(title: string): void {
@@ -155,6 +161,14 @@ export async function cleanupTestUsers(): Promise<void> {
     for (const l of data ?? []) {
       createdLectureIds.push(l.id);
       trackedFolders.push({ bucket: "lectures", folder: l.id });
+    }
+  }
+  for (const title of assignmentTitles.splice(0)) {
+    const { data, error } = await admin.from("assignments").select("id").eq("title", title);
+    if (error) errors.push(`assignment lookup: ${error.message}`);
+    for (const a of data ?? []) {
+      createdAssignmentIds.push(a.id);
+      trackedFolders.push({ bucket: "questions", folder: a.id });
     }
   }
   for (const { bucket, folder } of trackedFolders.splice(0)) {

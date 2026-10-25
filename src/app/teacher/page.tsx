@@ -10,6 +10,11 @@ export default function TeacherHome() {
         </Link>
       </p>
       <p className="mt-3">
+        <Link href="/teacher/homework/new" className="rounded border border-black/20 px-3 py-1 hover:bg-black/5 dark:border-white/25 dark:hover:bg-white/10">
+          + New homework
+        </Link>
+      </p>
+      <p className="mt-3">
         <Link href="/teacher/students" className="underline">
           Students
         </Link>

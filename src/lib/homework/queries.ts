@@ -1,0 +1,151 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { connection } from "next/server";
+import type { StudentItem, TeacherHomework, TeacherHomeworkDetail } from "./types";
+
+type ListRow = {
+  id: string;
+  title: string;
+  visible_from: string;
+  due_at: string;
+  assignment_students: { count: number }[];
+  submissions: { count: number }[];
+};
+
+export async function listHomeworkForTeacher(client: SupabaseClient): Promise<TeacherHomework[]> {
+  const { data, error } = await client
+    .from("assignments")
+    .select("id, title, visible_from, due_at, assignment_students(count), submissions(count)")
+    .eq("kind", "homework")
+    .order("due_at", { ascending: false });
+  if (error) throw new Error(`Could not load homework: ${error.message}`);
+  await connection(); // request time: the clock below must not be prerendered
+  const now = Date.now();
+  return ((data ?? []) as unknown as ListRow[]).map((r) => ({
+    id: r.id,
+    title: r.title,
+    visibleFrom: r.visible_from,
+    dueAt: r.due_at,
+    isScheduled: new Date(r.visible_from).getTime() > now,
+    studentCount: r.assignment_students[0]?.count ?? 0,
+    submittedCount: r.submissions[0]?.count ?? 0,
+  }));
+}
+
+type ItemRow = {
+  assignment_id: string;
+  student_id: string;
+  student_name: string;
+  kind: "homework" | "test";
+  title: string;
+  instructions: string | null;
+  max_marks: number | string;
+  visible_from: string;
+  effective_opens_at: string;
+  effective_due_at: string;
+  action_state: StudentItem["actionState"];
+  is_excused: boolean;
+  has_submission: boolean;
+  is_late: boolean;
+  is_marked: boolean;
+  submitted_at: string | null;
+  submission_name: string | null;
+  submission_path: string | null;
+  revision: number | null;
+};
+
+export function mapStudentItem(r: ItemRow): StudentItem {
+  return {
+    assignmentId: r.assignment_id,
+    studentId: r.student_id,
+    studentName: r.student_name,
+    kind: r.kind,
+    title: r.title,
+    instructions: r.instructions,
+    maxMarks: Number(r.max_marks),
+    visibleFrom: r.visible_from,
+    effectiveOpensAt: r.effective_opens_at,
+    effectiveDueAt: r.effective_due_at,
+    actionState: r.action_state,
+    isExcused: r.is_excused,
+    hasSubmission: r.has_submission,
+    isLate: r.is_late,
+    isMarked: r.is_marked,
+    submittedAt: r.submitted_at,
+    submissionName: r.submission_name,
+    submissionPath: r.submission_path,
+    revision: r.revision,
+  };
+}
+
+type DetailRow = {
+  id: string;
+  title: string;
+  instructions: string | null;
+  max_marks: number | string;
+  visible_from: string;
+  due_at: string;
+  assignment_files: {
+    id: string;
+    purpose: string;
+    original_name: string;
+    object_path: string;
+    size_bytes: number;
+    created_at: string;
+  }[];
+};
+
+export async function getHomeworkForTeacher(client: SupabaseClient, id: string): Promise<TeacherHomeworkDetail | null> {
+  const { data, error } = await client
+    .from("assignments")
+    .select(
+      "id, title, instructions, max_marks, visible_from, due_at, assignment_files(id, purpose, original_name, object_path, size_bytes, created_at)",
+    )
+    .eq("id", id)
+    .eq("kind", "homework")
+    .order("created_at", { referencedTable: "assignment_files", ascending: true })
+    .maybeSingle();
+  if (error) throw new Error(`Could not load homework: ${error.message}`);
+  if (!data) return null;
+  const a = data as unknown as DetailRow;
+  const { data: items, error: iErr } = await client
+    .from("student_items")
+    .select("*")
+    .eq("assignment_id", id)
+    .order("student_name");
+  if (iErr) throw new Error(`Could not load students: ${iErr.message}`);
+  await connection();
+  const students = ((items ?? []) as unknown as ItemRow[]).map(mapStudentItem);
+  return {
+    id: a.id,
+    title: a.title,
+    instructions: a.instructions,
+    maxMarks: Number(a.max_marks),
+    visibleFrom: a.visible_from,
+    dueAt: a.due_at,
+    isVisible: new Date(a.visible_from).getTime() <= Date.now(),
+    anySubmission: students.some((s) => s.hasSubmission),
+    files: a.assignment_files
+      .filter((f) => f.purpose === "question")
+      .map((f) => ({
+        id: f.id,
+        originalName: f.original_name,
+        objectPath: f.object_path,
+        sizeBytes: Number(f.size_bytes),
+        createdAt: f.created_at,
+      })),
+    students,
+  };
+}
+
+export async function listActiveStudents(
+  client: SupabaseClient,
+): Promise<{ id: string; displayName: string; username: string }[]> {
+  const { data, error } = await client
+    .from("profiles")
+    .select("id, display_name, username")
+    .eq("role", "student")
+    .eq("is_active", true)
+    .order("username");
+  if (error) throw new Error(`Could not load students: ${error.message}`);
+  return (data ?? []).map((p) => ({ id: p.id, displayName: p.display_name, username: p.username ?? "" }));
+}

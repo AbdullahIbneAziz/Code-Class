@@ -8,12 +8,16 @@ export function UkDateTimeField({
   optional = false,
   defaultValue,
   needsZoneChoice = false,
+  disabled = false,
+  hint,
 }: {
   name: string;
   label: string;
   optional?: boolean;
   defaultValue?: { date: string; time: string; zone: UkZone };
   needsZoneChoice?: boolean;
+  disabled?: boolean;
+  hint?: string;
 }) {
   // A stored time that falls in the repeated hour must keep its zone on re-save.
   const defaultAmbiguous =
@@ -32,7 +36,8 @@ export function UkDateTimeField({
           name={`${name}Date`}
           aria-label={`${label} date`}
           defaultValue={defaultValue?.date}
-          required={!optional}
+          required={!optional && !disabled}
+          disabled={disabled}
           className={input}
         />
         <input
@@ -40,11 +45,13 @@ export function UkDateTimeField({
           name={`${name}Time`}
           aria-label={`${label} time`}
           defaultValue={defaultValue?.time}
-          required={!optional}
+          required={!optional && !disabled}
+          disabled={disabled}
           className={input}
         />
       </div>
-      {showZone && (
+      {hint && <p className="text-sm opacity-70">{hint}</p>}
+      {showZone && !disabled && (
         <fieldset className="text-sm">
           <legend className="font-medium">BST (first time) or GMT (second time)?</legend>
           <label className="mr-4">
