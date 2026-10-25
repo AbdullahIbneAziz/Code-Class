@@ -1,4 +1,4 @@
-import type { UkZone } from "@/lib/time/uk";
+import { parseUkLocal, type UkZone } from "@/lib/time/uk";
 
 const input = "mt-1 rounded border border-black/20 bg-transparent px-3 py-2 dark:border-white/25";
 
@@ -15,6 +15,12 @@ export function UkDateTimeField({
   defaultValue?: { date: string; time: string; zone: UkZone };
   needsZoneChoice?: boolean;
 }) {
+  // A stored time that falls in the repeated hour must keep its zone on re-save.
+  const defaultAmbiguous =
+    !!defaultValue && parseUkLocal(defaultValue.date, defaultValue.time).ok === false &&
+    (parseUkLocal(defaultValue.date, defaultValue.time) as { reason: string }).reason === "ambiguous";
+  const showZone = needsZoneChoice || defaultAmbiguous;
+  const zoneDefault = defaultAmbiguous ? defaultValue.zone : undefined;
   return (
     <fieldset className="flex flex-col gap-2">
       <legend className="text-sm font-medium">
@@ -38,14 +44,14 @@ export function UkDateTimeField({
           className={input}
         />
       </div>
-      {needsZoneChoice && (
+      {showZone && (
         <fieldset className="text-sm">
           <legend className="font-medium">BST (first time) or GMT (second time)?</legend>
           <label className="mr-4">
-            <input type="radio" name={`${name}Zone`} value="BST" required /> BST (first time)
+            <input type="radio" name={`${name}Zone`} value="BST" defaultChecked={zoneDefault === "BST"} required /> BST (first time)
           </label>
           <label>
-            <input type="radio" name={`${name}Zone`} value="GMT" required /> GMT (second time)
+            <input type="radio" name={`${name}Zone`} value="GMT" defaultChecked={zoneDefault === "GMT"} required /> GMT (second time)
           </label>
         </fieldset>
       )}

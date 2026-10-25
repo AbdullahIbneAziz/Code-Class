@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { UkDateTimeField } from "@/components/UkDateTimeField";
 import {
   dueLabel,
   formatBd,
@@ -130,5 +133,63 @@ describe("readUkField", () => {
   });
   it("nonexistent has no zone choice", () => {
     expect(readUkField(fd({ dueDate: "2027-03-28", dueTime: "01:30" }), "due", { optional: false })).toEqual({ ok: false, message: NONEXISTENT });
+  });
+});
+
+describe("host time zone gaps (host DST must not affect UK results)", () => {
+  const original = process.env.TZ;
+  afterEach(() => {
+    if (original === undefined) delete process.env.TZ;
+    else process.env.TZ = original;
+  });
+  it("Los Angeles host, UK 2027-03-14 02:30 is a valid GMT time", () => {
+    process.env.TZ = "America/Los_Angeles";
+    expect(new Date("2027-01-01T00:00:00Z").getTimezoneOffset()).toBe(480);
+    const r = parseUkLocal("2027-03-14", "02:30");
+    expect(r).toMatchObject({ ok: true, zone: "GMT" });
+    expect(iso(r)).toBe("2027-03-14T02:30:00.000Z");
+    expect(formatUk(new Date("2027-03-14T02:30:00Z"))).toBe("Sun 14 Mar 2027, 2:30 AM");
+    expect(toUkInputParts(new Date("2027-03-14T02:30:00Z"))).toEqual({ date: "2027-03-14", time: "02:30", zone: "GMT" });
+    expect(formatBd(new Date("2027-03-14T02:30:00Z"))).toBe("Sun 14 Mar, 8:30 AM");
+    expect(dueLabel(new Date("2027-03-14T02:30:00Z"), new Date("2027-03-13T12:00:00Z"))).toBe("Due tomorrow, 2:30 AM");
+  });
+  it("Paris host, UK 2027-03-28 02:00 and 02:30 are valid BST times", () => {
+    process.env.TZ = "Europe/Paris";
+    expect(new Date("2027-01-01T00:00:00Z").getTimezoneOffset()).toBe(-60);
+    const r = parseUkLocal("2027-03-28", "02:30");
+    expect(r).toMatchObject({ ok: true, zone: "BST" });
+    expect(iso(r)).toBe("2027-03-28T01:30:00.000Z");
+    expect(iso(parseUkLocal("2027-03-28", "02:00"))).toBe("2027-03-28T01:00:00.000Z");
+    expect(parseUkLocal("2027-03-28", "01:30")).toMatchObject({ ok: false, reason: "nonexistent" });
+    expect(formatUk(new Date("2027-03-28T01:30:00Z"))).toBe("Sun 28 Mar 2027, 2:30 AM");
+    expect(toUkInputParts(new Date("2027-03-28T01:30:00Z"))).toEqual({ date: "2027-03-28", time: "02:30", zone: "BST" });
+    expect(formatBd(new Date("2027-03-28T01:30:00Z"))).toBe("Sun 28 Mar, 7:30 AM");
+  });
+});
+
+describe("UkDateTimeField default zone", () => {
+  const submitted = (zone: "GMT" | "BST") => {
+    const html = renderToStaticMarkup(
+      createElement(UkDateTimeField, { name: "due", label: "Deadline", defaultValue: { date: "2027-10-31", time: "01:30", zone } }),
+    );
+    const fd = new FormData();
+    fd.set("dueDate", "2027-10-31");
+    fd.set("dueTime", "01:30");
+    for (const tag of html.match(/<input[^>]*>/g) ?? []) {
+      if (/name="dueZone"/.test(tag) && /checked/.test(tag)) fd.set("dueZone", /value="(\w+)"/.exec(tag)![1]);
+    }
+    return fd;
+  };
+  it("re-saving keeps the original instant", () => {
+    const g = readUkField(submitted("GMT"), "due", { optional: false });
+    expect(g.ok && g.instant?.toISOString()).toBe("2027-10-31T01:30:00.000Z");
+    const b = readUkField(submitted("BST"), "due", { optional: false });
+    expect(b.ok && b.instant?.toISOString()).toBe("2027-10-31T00:30:00.000Z");
+  });
+  it("no radios for an unambiguous default", () => {
+    const html = renderToStaticMarkup(
+      createElement(UkDateTimeField, { name: "due", label: "D", defaultValue: { date: "2026-10-21", time: "20:00", zone: "BST" } }),
+    );
+    expect(html).not.toContain("dueZone");
   });
 });
