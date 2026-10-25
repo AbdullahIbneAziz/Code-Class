@@ -23,6 +23,8 @@ These are dashboard settings that migrations cannot set. Re-check them after any
 - `replaced_files` has a `bucket` column: each row records which bucket (lectures, questions, solutions) holds the old file awaiting clean-up. Clean-up must delete from that bucket.
 - A project restore or re-creation needs all Phase 1 migrations (20261024000001-000007) and the Phase 2 migrations 20261025000001-000005 (rule_helpers, files_lectures, assignments, assignment_lock_modes, finalize_submission), applied in order with `npm run db:push`.
 
+- A restore (also after Phase 3) needs migrations up to `20261025000007_marking_solutions.sql`, 14 in total, applied in order.
+
 ## Auth values (config.toml mirrors these; the hosted dashboard must be set by hand)
 - Minimum password length: **8** (Authentication -> Sign In / Providers -> Password). `supabase/config.toml` sets 8; the teacher changes the hosted dashboard setting.
 - Session / JWT expiry: 3600 s (`jwt_expiry` in config.toml, the default).

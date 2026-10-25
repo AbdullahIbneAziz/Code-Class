@@ -10,7 +10,7 @@ It is a web app written with Next.js (a JavaScript framework; think of it as Fla
 
 Phase 1 included: username login, forced password change at first login, and a teacher page to add, reset, rename and deactivate students.
 
-Phase 2 (current) includes:
+Phase 2 included:
 
 - Lectures: the teacher uploads, edits and deletes lectures; students download them.
 - Homework: the teacher creates it, schedules when it appears, chooses which students get it, attaches question files, edits it under fixed rules and deletes it.
@@ -18,6 +18,12 @@ Phase 2 (current) includes:
 - Student homework list and detail pages with downloads. Hidden or unassigned homework simply shows "not found".
 - Student upload: on time, late, replace until marked, and missed work.
 - A student home page with a "pending homework" banner.
+
+Phase 3 (current) includes:
+
+- Marking: a queue of work waiting for a mark, and a mark and comment for each student.
+- Solutions: the teacher uploads a solution and students see it under fixed rules.
+- Progress: marks, averages and counts for the teacher dashboard and for each student.
 
 ## Settings you need
 
@@ -133,6 +139,41 @@ All times you type are UK time. On teacher screens the same moment in Bangladesh
 - On-time work is locked after the deadline, so it cannot be swapped for a different file later.
 - If nothing is uploaded by the deadline, the homework shows as missed.
 
+## Marking
+
+Work waiting for a mark is listed at **Marking** (`/teacher/marking`). The dashboard shows the same list as **Needs marking (N)**.
+
+1. Download the student's notebook first.
+2. Type the mark and a comment (up to 2000 characters).
+3. Press **Save**.
+
+- If you see "This student uploaded a new version. Please download it again.", the student has uploaded again since you opened the page. Download the new file, then press Save.
+- To correct a mark, change it and press **Update mark**.
+- Marking locks the student's file. They cannot replace it any more.
+- A class test cannot be marked until that student's test has ended. Tests arrive in Phase 4, but this rule is already in place.
+- Excused students and deactivated students are not in the queue. You can still mark them from the homework's own page.
+
+## Solutions
+
+On a homework's page, press **Upload solution**. Press **Replace solution** to swap the file later.
+
+A student sees the solution when both of these are true:
+
+1. Their own deadline has passed.
+2. They have submitted, they have been excused, or you pressed **Unlock solution for everyone**.
+
+Unlocking cannot be undone. Even after you unlock, each student still waits for their own deadline.
+
+## Progress numbers
+
+The teacher dashboard (**Students at a glance**), the student's home page and the student's **Progress** page (`/progress`) all show the same numbers.
+
+- Late work counts in **Submitted** too.
+- Missed work counts as 0%.
+- Excused work and work not yet marked are left out of the averages.
+- There is no automatic penalty for late work.
+- A brand-new student shows zeros and dashes.
+
 ## Upload proof
 
 25 October 2026, on the live site (https://codeclass-tuition.netlify.app): a 25 MB lecture file uploaded by the teacher (resumable upload) and a 5 MB notebook uploaded and submitted by a student both worked. All 39 other browser tests for login, students, lectures, homework, submitting and the home page also passed on the live site. Test accounts were removed afterwards.
@@ -147,11 +188,13 @@ The free Supabase plan pauses a project after a week with no activity. If the si
 
 ## Deploying
 
-The site is on Netlify as `codeclass-tuition`, and it rebuilds automatically from GitHub whenever the `phase-0-1-foundation` branch changes. That branch is the live site's production branch, and it is kept identical to `main`. To make Netlify build from `main` instead, go to Netlify → Project configuration → Build & deploy → Branches and change the production branch. Until that switch is made, merging to `main` alone does not deploy. You do not need to run a deploy command.
+The site is on Netlify as `codeclass-tuition`. Netlify rebuilds the live site automatically whenever `main` changes on GitHub. Since 25 October 2026 `main` is the production branch, and branch deploys are set to "Deploy only the production branch". You do not need to run a deploy command.
 
 Keep it to a few deploys a month: each deploy uses Netlify credits on the free plan. Check Netlify → Usage now and then. Before merging, run `npm run lint`, `npm test` and `npm run build` so you do not spend a deploy on a broken build.
 
-After a deploy, `BASE_URL=https://codeclass-tuition.netlify.app npm run test:e2e -- login must-change students upload-proof lectures homework-teacher homework-student submit home` runs the browser tests against the live site.
+After a deploy, `BASE_URL=https://codeclass-tuition.netlify.app npm run test:e2e -- login must-change students upload-proof lectures homework-teacher homework-student submit home solutions-teacher marking marking-homework marks-student dashboard progress` runs the browser tests against the live site.
+
+To check the security headers, request a page such as `/login` (for example `curl -sI https://codeclass-tuition.netlify.app/login`). The redirect on `/` has an empty body, so it carries no frame headers, and that is harmless.
 
 Replaced or deleted files stay in storage until the Phase 5 clean-up, so they still count toward the 1 GB budget, but students can no longer open them.
 

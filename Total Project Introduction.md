@@ -1,8 +1,8 @@
 # CodeClass: Total Project Introduction
 
 > One document that explains the whole project: what it is, why it exists, what's built, what's next, how it works, and where everything lives.
-> **Last updated:** 25 October 2026 (after the Phase 2 deploy)
-> **Current stage:** Phases 0–2 built, reviewed and live. Phase 3 (marking and progress) in progress.
+> **Last updated:** 25 October 2026 (Phase 3 built; deploy pending)
+> **Current stage:** Phases 0–2 built, reviewed and live. Phase 3 (marking and progress) built and reviewed; deploy pending. Phase 4 (class tests) is next.
 
 ---
 
@@ -53,7 +53,7 @@ CodeClass replaces the WhatsApp back-and-forth with **one website** where:
 
 ## 4. Features
 
-### ✅ Built (Phases 0–2)
+### ✅ Built (Phases 0–3)
 | Feature | Details |
 |---|---|
 | **Login** | Username + password, with the same error message whatever went wrong ("Username or password is incorrect") |
@@ -63,12 +63,12 @@ CodeClass replaces the WhatsApp back-and-forth with **one website** where:
 | **Teacher → Students page** | Add a student (the temporary password is shown **once**, with a Copy button and "Send this to the family on WhatsApp"), reset a password, rename, deactivate (with a confirmation step) or reactivate, and see each student's last login in UK time |
 | **Lectures** | Upload lecture files; students download them with their original names |
 | **Homework** | Create and **schedule** homework for chosen students; question files; students upload `.ipynb`/`.py`; on time / **late** / **missed**; the "You have N pending homeworks" banner first on the home page; editing rules after publishing |
+| **Marking and progress (Phase 3)** | Marking queue and dashboard "Needs marking"; mark and comment with a "new version" check; Update mark; solutions with the unlock rules; student marks, feedback and Marked tab; progress tiles, `/progress` page and teacher "Students at a glance" |
 | **Database and security** | All tables, safety checks, access rules, homework and solution rules, progress calculations, and private file storage. These are already built and tested, ready for the homework screens. |
 
 ### ⏳ Planned
 | Feature | Phase |
 |---|---|
-| **Marking** with marks + feedback; **solutions** that unlock after the deadline *and* after submitting; progress dashboards for the teacher and for students/parents | **3** |
 | **Timed class tests** that open at a set time and **close completely** at the end time | **4** |
 | Per-student **exceptions** (extra time, moved test, excuse); deleting data **12 months** after a student leaves; dark mode; phone layout | **5** |
 | **Backups and a restore test**; the real teacher and student accounts; final checks | **6** |
@@ -92,7 +92,7 @@ The full rules are in [ARCHITECTURE.md](ARCHITECTURE.md) §4.
 | 0 | Login proof (username login works on Supabase) | ✅ Done |
 | 1 | Foundation | ✅ Done and live |
 | 2 | Lectures + homework | ✅ Done and live (25 Oct 2026) |
-| 3 | Marking + progress | 🔄 In progress |
+| 3 | Marking + progress | ✅ Built and reviewed; deploy pending |
 | 4 | Class tests | ⏳ |
 | 5 | Exceptions + polish | ⏳ |
 | 6 | Go-live checks (backups, real accounts) | ⏳ |
@@ -215,5 +215,6 @@ To create the teacher account (once): `npm run -s create-teacher -- --username m
 
 ## 15. What's next
 
-1. Build **Phase 3: marking and progress.**
-2. Continue with Phases 4–6. The students start using the platform once Phases 2 and 3 are done, and real accounts are created in Phase 6.
+1. Deploy Phase 3 (marking and progress).
+2. Build **Phase 4: class tests.**
+3. Continue with Phases 5–6. The students start using the platform once Phases 2 and 3 are done, and real accounts are created in Phase 6.
