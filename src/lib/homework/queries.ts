@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { connection } from "next/server";
+import type { FileRow } from "@/lib/files/types";
 import type { StudentItem, TeacherHomework, TeacherHomeworkDetail } from "./types";
 
 type ListRow = {
@@ -148,4 +149,44 @@ export async function listActiveStudents(
     .order("username");
   if (error) throw new Error(`Could not load students: ${error.message}`);
   return (data ?? []).map((p) => ({ id: p.id, displayName: p.display_name, username: p.username ?? "" }));
+}
+
+/** The signed-in student's own homework rows (the view hides everything not yet visible or not theirs). */
+export async function listMyItems(client: SupabaseClient): Promise<StudentItem[]> {
+  const { data, error } = await client
+    .from("student_items")
+    .select("*")
+    .eq("kind", "homework")
+    .order("effective_due_at", { ascending: true });
+  if (error) throw new Error(`Could not load homework: ${error.message}`);
+  return ((data ?? []) as unknown as ItemRow[]).map(mapStudentItem);
+}
+
+export async function getMyItem(client: SupabaseClient, assignmentId: string): Promise<StudentItem | null> {
+  const { data, error } = await client
+    .from("student_items")
+    .select("*")
+    .eq("assignment_id", assignmentId)
+    .eq("kind", "homework")
+    .maybeSingle();
+  if (error) throw new Error(`Could not load homework: ${error.message}`);
+  return data ? mapStudentItem(data as unknown as ItemRow) : null;
+}
+
+/** Question files; RLS on assignment_files decides what the student may see. */
+export async function listQuestionFiles(client: SupabaseClient, assignmentId: string): Promise<FileRow[]> {
+  const { data, error } = await client
+    .from("assignment_files")
+    .select("id, original_name, object_path, size_bytes, created_at")
+    .eq("assignment_id", assignmentId)
+    .eq("purpose", "question")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(`Could not load files: ${error.message}`);
+  return (data ?? []).map((f) => ({
+    id: f.id,
+    originalName: f.original_name,
+    objectPath: f.object_path,
+    sizeBytes: Number(f.size_bytes),
+    createdAt: f.created_at,
+  }));
 }
