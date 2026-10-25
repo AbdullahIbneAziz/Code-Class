@@ -1,8 +1,8 @@
 # CodeClass: Total Project Introduction
 
 > One document that explains the whole project: what it is, why it exists, what's built, what's next, how it works, and where everything lives.
-> **Last updated:** 25 October 2026
-> **Current stage:** Phase 1 (Foundation) built and reviewed. First live deploy in progress. Phase 2 (lectures and homework) being planned.
+> **Last updated:** 25 October 2026 (after the Phase 2 deploy)
+> **Current stage:** Phases 0–2 built, reviewed and live. Phase 3 (marking and progress) in progress.
 
 ---
 
@@ -53,7 +53,7 @@ CodeClass replaces the WhatsApp back-and-forth with **one website** where:
 
 ## 4. Features
 
-### ✅ Built (Phases 0–1)
+### ✅ Built (Phases 0–2)
 | Feature | Details |
 |---|---|
 | **Login** | Username + password, with the same error message whatever went wrong ("Username or password is incorrect") |
@@ -61,12 +61,13 @@ CodeClass replaces the WhatsApp back-and-forth with **one website** where:
 | **My account** | Change password (current password + new password twice) |
 | **Page routing** | Logged-out visitors go to the login page, students to their home, the teacher to the dashboard. Deactivated accounts are signed out. |
 | **Teacher → Students page** | Add a student (the temporary password is shown **once**, with a Copy button and "Send this to the family on WhatsApp"), reset a password, rename, deactivate (with a confirmation step) or reactivate, and see each student's last login in UK time |
+| **Lectures** | Upload lecture files; students download them with their original names |
+| **Homework** | Create and **schedule** homework for chosen students; question files; students upload `.ipynb`/`.py`; on time / **late** / **missed**; the "You have N pending homeworks" banner first on the home page; editing rules after publishing |
 | **Database and security** | All tables, safety checks, access rules, homework and solution rules, progress calculations, and private file storage. These are already built and tested, ready for the homework screens. |
 
 ### ⏳ Planned
 | Feature | Phase |
 |---|---|
-| Upload lectures; create and **schedule** daily homework; students download it and upload `.ipynb`/`.py`; on-time / **late** / **missed**; the pending banner; editing rules | **2** |
 | **Marking** with marks + feedback; **solutions** that unlock after the deadline *and* after submitting; progress dashboards for the teacher and for students/parents | **3** |
 | **Timed class tests** that open at a set time and **close completely** at the end time | **4** |
 | Per-student **exceptions** (extra time, moved test, excuse); deleting data **12 months** after a student leaves; dark mode; phone layout | **5** |
@@ -89,9 +90,9 @@ The full rules are in [ARCHITECTURE.md](ARCHITECTURE.md) §4.
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Login proof (username login works on Supabase) | ✅ Done |
-| 1 | Foundation | ✅ Built and reviewed. First live deploy in progress. |
-| 2 | Lectures + homework | 🔄 Plan being written |
-| 3 | Marking + progress | ⏳ |
+| 1 | Foundation | ✅ Done and live |
+| 2 | Lectures + homework | ✅ Done and live (25 Oct 2026) |
+| 3 | Marking + progress | 🔄 In progress |
 | 4 | Class tests | ⏳ |
 | 5 | Exceptions + polish | ⏳ |
 | 6 | Go-live checks (backups, real accounts) | ⏳ |
@@ -113,7 +114,7 @@ Everything runs on **free plans** (target: £0/month).
 ### Live addresses
 | What | Where |
 |---|---|
-| Website (Netlify) | https://codeclass-tuition.netlify.app (first deploy in progress) |
+| Website (Netlify) | https://codeclass-tuition.netlify.app |
 | Supabase project | `codeclass-dev`, London (eu-west-2) |
 | Netlify project | `codeclass-tuition` |
 
@@ -214,6 +215,5 @@ To create the teacher account (once): `npm run -s create-teacher -- --username m
 
 ## 15. What's next
 
-1. Finish the first live deploy and check the live site with test accounts.
-2. Write and build **Phase 2: lectures and homework.**
-3. Continue with Phases 3–6. The students start using the platform once Phases 2 and 3 are done, and real accounts are created in Phase 6.
+1. Build **Phase 3: marking and progress.**
+2. Continue with Phases 4–6. The students start using the platform once Phases 2 and 3 are done, and real accounts are created in Phase 6.

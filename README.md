@@ -135,7 +135,7 @@ All times you type are UK time. On teacher screens the same moment in Bangladesh
 
 ## Upload proof
 
-To be filled after the Phase 2 deploy (date and result of the live 25 MB lecture and 5 MB notebook upload checks).
+25 October 2026, on the live site (https://codeclass-tuition.netlify.app): a 25 MB lecture file uploaded by the teacher (resumable upload) and a 5 MB notebook uploaded and submitted by a student both worked. All 39 other browser tests for login, students, lectures, homework, submitting and the home page also passed on the live site. Test accounts were removed afterwards.
 
 ## Supabase project paused
 
@@ -157,6 +157,7 @@ Replaced or deleted files stay in storage until the Phase 5 clean-up, so they st
 
 ## Running costs
 
-To be filled in after the first deploy (Netlify → Usage baseline).
+Netlify free plan: 300 credits a month (billing period 22nd to 21st).
 
-Phase 2 deploy credits: to be filled after the Phase 2 deploy.
+- 25 October 2026, after the Phase 1 and Phase 2 deploys plus the live browser tests: **15 credits used** this period (2 builds, about 2,300 web requests, 21 MB bandwidth). Each production deploy costs a few credits, so about 10 deploys a month stays well inside the free limit.
+- Supabase: free plan, £0.
