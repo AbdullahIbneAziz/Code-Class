@@ -241,3 +241,29 @@ export async function cleanupTestUsers(): Promise<void> {
   }
   if (errors.length) throw new Error(`cleanup problems: ${errors.join("; ")}`);
 }
+
+/** Seeds a solution file (object + assignment_files row) as the admin. Cleanup is registered before the upload. */
+export async function adminSeedSolution(
+  assignmentId: string,
+  originalName: string,
+): Promise<{ fileId: string; objectPath: string }> {
+  const admin = adminClient();
+  const objectPath = `${assignmentId}/${randomUUID()}.ipynb`;
+  trackObject("solutions", objectPath);
+  const body = new Blob(['{"cells":[]}'], { type: "application/json" });
+  const { error: uErr } = await admin.storage.from("solutions").upload(objectPath, body, { upsert: false });
+  if (uErr) throw new Error(`seed solution upload failed: ${uErr.message}`);
+  const { data, error } = await admin
+    .from("assignment_files")
+    .insert({
+      assignment_id: assignmentId,
+      purpose: "solution",
+      original_name: originalName,
+      object_path: objectPath,
+      size_bytes: 12,
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(`seed solution row failed: ${error.message}`);
+  return { fileId: data.id as string, objectPath };
+}

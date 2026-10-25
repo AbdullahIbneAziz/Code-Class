@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { itemLabel, statusLabel } from "@/lib/homework/status";
+import { homeworkTab, itemLabel, solutionNotice, statusLabel } from "@/lib/homework/status";
 import type { StudentItem } from "@/lib/homework/types";
 
 const base: StudentItem = {
@@ -50,4 +50,33 @@ describe("itemLabel", () => {
   it("marked late item", () =>
     expect(itemLabel({ ...done, isMarked: true, mark: 7 })).toBe("Submitted · Late · Marked 7/10"));
   it("unmarked equals statusLabel", () => expect(itemLabel(done)).toBe(statusLabel(done)));
+});
+
+describe("homeworkTab", () => {
+  it("pending", () => expect(homeworkTab(base)).toBe("pending"));
+  it("missed", () => expect(homeworkTab({ ...base, actionState: "missed" })).toBe("pending"));
+  it("done", () => expect(homeworkTab({ ...base, actionState: "done", hasSubmission: true })).toBe("submitted"));
+  it("done + marked", () =>
+    expect(homeworkTab({ ...base, actionState: "done", hasSubmission: true, isMarked: true })).toBe("marked"));
+  it("excused", () => expect(homeworkTab({ ...base, actionState: "excused", isExcused: true })).toBe("submitted"));
+  it("excused + marked", () =>
+    expect(homeworkTab({ ...base, actionState: "excused", isExcused: true, isMarked: true })).toBe("marked"));
+  it("hidden and upcoming", () => {
+    expect(homeworkTab({ ...base, actionState: "hidden" })).toBeNull();
+    expect(homeworkTab({ ...base, actionState: "upcoming" })).toBeNull();
+  });
+});
+
+describe("solutionNotice", () => {
+  const i = { available: false, hasSubmission: true, isExcused: false, unlockedForAll: false, deadlinePassed: true };
+  it("available shows no notice", () => expect(solutionNotice({ ...i, available: true })).toBeNull());
+  it("not submitted, not excused, not unlocked", () =>
+    expect(solutionNotice({ ...i, hasSubmission: false })).toBe("Submit your homework to unlock the solution."));
+  it("deadline not passed", () =>
+    expect(solutionNotice({ ...i, deadlinePassed: false })).toBe("The solution will be available after your deadline."));
+  it("nothing shared yet", () => expect(solutionNotice(i)).toBe("No solution has been shared yet."));
+  it("unlocked for all but before deadline", () =>
+    expect(solutionNotice({ ...i, hasSubmission: false, unlockedForAll: true, deadlinePassed: false })).toBe(
+      "The solution will be available after your deadline.",
+    ));
 });

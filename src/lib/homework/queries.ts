@@ -152,3 +152,21 @@ export async function listQuestionFiles(client: SupabaseClient, assignmentId: st
     createdAt: f.created_at,
   }));
 }
+
+/** The student's visible solution file per assignment; RLS decides what comes back (earliest row wins). */
+export async function listMySolutions(client: SupabaseClient, assignmentIds: string[]): Promise<Map<string, FileRow>> {
+  const out = new Map<string, FileRow>();
+  if (assignmentIds.length === 0) return out;
+  const { data, error } = await client
+    .from("assignment_files")
+    .select("id, assignment_id, original_name, object_path, size_bytes, created_at")
+    .eq("purpose", "solution")
+    .in("assignment_id", assignmentIds)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(`Could not load solutions: ${error.message}`);
+  for (const f of data ?? []) {
+    if (out.has(f.assignment_id)) continue;
+    out.set(f.assignment_id, toFileRow({ ...f, purpose: "solution" }));
+  }
+  return out;
+}

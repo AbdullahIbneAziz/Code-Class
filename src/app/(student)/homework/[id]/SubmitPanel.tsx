@@ -45,6 +45,7 @@ export function SubmitPanel({ item, deadlinePassed = false }: { item: StudentIte
       setProgress(null);
       if (!r.ok) {
         setError(r.message); // the chosen file stays selected
+        router.refresh(); // the refusal may mean the item changed (e.g. just marked)
         return;
       }
       if (inputRef.current) inputRef.current.value = "";
@@ -72,7 +73,9 @@ export function SubmitPanel({ item, deadlinePassed = false }: { item: StudentIte
           )}
         </div>
       )}
-      {item.isMarked ? (
+      {item.isExcused ? (
+        <p className="mt-2 text-sm">You&apos;ve been excused from this homework. It doesn&apos;t count.</p>
+      ) : item.isMarked ? (
         <p className="mt-2 text-sm">Marked. Your file is locked.</p>
       ) : onTimeLocked ? (
         <p className="mt-2 text-sm">Your on-time submission is locked because the deadline has passed.</p>

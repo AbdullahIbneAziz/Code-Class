@@ -1,22 +1,21 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { listMyItems } from "@/lib/homework/queries";
-import { statusLabel } from "@/lib/homework/status";
+import { homeworkTab, itemLabel } from "@/lib/homework/status";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { dueLabel } from "@/lib/time/uk";
 
 export default async function StudentHomeworkPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab } = await searchParams;
-  const active = tab === "submitted" ? "submitted" : "pending";
+  const active = tab === "submitted" || tab === "marked" ? tab : "pending";
   const items = await listMyItems(await createServerSupabase());
   await connection(); // request time: the clock below must not be prerendered
   const now = new Date();
-  const shown = items.filter((i) =>
-    active === "pending" ? i.actionState === "pending" || i.actionState === "missed" : i.actionState === "done",
-  );
+  const shown = items.filter((i) => homeworkTab(i) === active);
   const tabs = [
     { key: "pending", label: "Pending" },
     { key: "submitted", label: "Submitted" },
+    { key: "marked", label: "Marked" },
   ];
   return (
     <main className="mx-auto w-full max-w-2xl p-6">
@@ -39,6 +38,9 @@ export default async function StudentHomeworkPage({ searchParams }: { searchPara
       {shown.length === 0 && active === "submitted" && (
         <p className="mt-4 text-black/70 dark:text-white/70">Nothing submitted yet.</p>
       )}
+      {shown.length === 0 && active === "marked" && (
+        <p className="mt-4 text-black/70 dark:text-white/70">Nothing marked yet.</p>
+      )}
       <ul className="mt-4 flex flex-col gap-3">
         {shown.map((i) => (
           <li key={i.assignmentId}>
@@ -51,7 +53,7 @@ export default async function StudentHomeworkPage({ searchParams }: { searchPara
                 {i.actionState === "missed" ? "LATE, " : ""}
                 {dueLabel(new Date(i.effectiveDueAt), now)}
               </span>
-              <span className="block text-sm text-black/70 dark:text-white/70">{statusLabel(i)}</span>
+              <span className="block text-sm text-black/70 dark:text-white/70">{itemLabel(i)}</span>
             </Link>
           </li>
         ))}
