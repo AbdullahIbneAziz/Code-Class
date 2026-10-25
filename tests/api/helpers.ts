@@ -26,6 +26,37 @@ export function trackObject(bucket: string, path: string): void {
   uploaded.push({ bucket, path });
 }
 
+const trackedFolders: { bucket: string; folder: string }[] = [];
+const createdLectureIds: string[] = [];
+
+/** Record a storage folder; cleanup lists it recursively and removes every object (and replaced_files rows). */
+export function trackFolder(bucket: string, folder: string): void {
+  trackedFolders.push({ bucket, folder });
+}
+
+/** Record a lecture id so cleanup deletes the row (lecture_files cascade). */
+export function trackLecture(id: string): void {
+  createdLectureIds.push(id);
+}
+
+async function listAllPaths(bucket: string, folder: string): Promise<string[]> {
+  const out: string[] = [];
+  const stack = [folder];
+  while (stack.length) {
+    const dir = stack.pop()!;
+    for (let offset = 0; ; offset += 100) {
+      const { data, error } = await adminClient().storage.from(bucket).list(dir, { limit: 100, offset });
+      if (error) throw new Error(`list ${bucket}/${dir}: ${error.message}`);
+      for (const e of data ?? []) {
+        if (e.id === null) stack.push(`${dir}/${e.name}`);
+        else out.push(`${dir}/${e.name}`);
+      }
+      if ((data?.length ?? 0) < 100) break;
+    }
+  }
+  return out;
+}
+
 export type TestUser = { id: string; username: string; password: string; client: SupabaseClient };
 
 export async function makeTestUser(
@@ -112,6 +143,24 @@ export async function cleanupTestUsers(): Promise<void> {
     if (error) errors.push(`remove ${bucket}: ${error.message}`);
   }
   uploaded.length = 0;
+  for (const { bucket, folder } of trackedFolders.splice(0)) {
+    try {
+      const paths = await listAllPaths(bucket, folder);
+      if (paths.length) {
+        const { error } = await admin.storage.from(bucket).remove(paths);
+        if (error) errors.push(`remove ${bucket}/${folder}: ${error.message}`);
+        const { error: rErr } = await admin.from("replaced_files").delete().eq("bucket", bucket).in("object_path", paths);
+        if (rErr) errors.push(`replaced_files: ${rErr.message}`);
+      }
+    } catch (e) {
+      errors.push(String(e));
+    }
+  }
+  if (createdLectureIds.length) {
+    const { error } = await admin.from("lectures").delete().in("id", createdLectureIds);
+    if (error) errors.push(`lectures: ${error.message}`);
+    createdLectureIds.length = 0;
+  }
   if (createdAssignmentIds.length) {
     const { error } = await admin.from("assignments").delete().in("id", createdAssignmentIds);
     if (error) errors.push(`assignments: ${error.message}`);
