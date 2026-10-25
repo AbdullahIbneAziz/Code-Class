@@ -89,7 +89,7 @@ Replace `<temp>` with a temporary password of at least 8 characters (the `-s` fl
 
 ## Upload a lecture
 
-Log in, open **Lectures**, press New lecture, give it a title, and choose the files. Allowed types are `.ipynb`, `.py`, `.pdf`, `.pptx`, `.png` and `.jpg`, up to 25 MB each. Students see it straight away and can download the files. You can edit the title, add or replace files, or delete the lecture later. Deleting is permanent.
+Log in, open **Lectures**, fill in the inline **Upload lecture** form with a title and the files. Allowed types are `.ipynb`, `.py`, `.pdf`, `.pptx`, `.png` and `.jpg`, up to 25 MB each. Students see it straight away and can download the files. You can edit the title, add or replace files, or delete the lecture later. Deleting is permanent.
 
 ## Create and schedule homework
 
@@ -147,11 +147,13 @@ The free Supabase plan pauses a project after a week with no activity. If the si
 
 ## Deploying
 
-The site is on Netlify as `codeclass-tuition`, and it rebuilds automatically from GitHub whenever the `main` branch changes. You do not need to run a deploy command.
+The site is on Netlify as `codeclass-tuition`, and it rebuilds automatically from GitHub whenever the `phase-0-1-foundation` branch changes. That branch is the live site's production branch, and it is kept identical to `main`. To make Netlify build from `main` instead, go to Netlify → Project configuration → Build & deploy → Branches and change the production branch. Until that switch is made, merging to `main` alone does not deploy. You do not need to run a deploy command.
 
 Keep it to a few deploys a month: each deploy uses Netlify credits on the free plan. Check Netlify → Usage now and then. Before merging, run `npm run lint`, `npm test` and `npm run build` so you do not spend a deploy on a broken build.
 
-After a deploy, `BASE_URL=https://codeclass-tuition.netlify.app npm run test:e2e -- login must-change students` runs the browser tests against the live site.
+After a deploy, `BASE_URL=https://codeclass-tuition.netlify.app npm run test:e2e -- login must-change students upload-proof lectures homework-teacher homework-student submit home` runs the browser tests against the live site.
+
+Replaced or deleted files stay in storage until the Phase 5 clean-up, so they still count toward the 1 GB budget, but students can no longer open them.
 
 ## Running costs
 
