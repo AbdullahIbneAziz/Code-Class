@@ -8,6 +8,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           { href: "/", label: "Home" },
           { href: "/homework", label: "Homework" },
           { href: "/lectures", label: "Lectures" },
+          { href: "/progress", label: "My Progress" },
         ]}
       />
       {children}

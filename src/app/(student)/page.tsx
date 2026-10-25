@@ -1,6 +1,10 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { PendingCard } from "@/components/PendingCard";
-import { listMyItems, listQuestionFiles } from "@/lib/homework/queries";
+import { ProgressTiles } from "@/components/ProgressTiles";
+import { listMyItems, listMySolutions, listQuestionFiles } from "@/lib/homework/queries";
+import { markText } from "@/lib/marking/format";
+import { getMyProgress, listRecentlyMarked } from "@/lib/progress/queries";
 import { pendingBanner } from "@/lib/homework/pending";
 import { createServerSupabase } from "@/lib/supabase/server";
 
@@ -14,6 +18,11 @@ export default async function StudentHome() {
     .maybeSingle();
   const banner = pendingBanner(await listMyItems(supabase));
   const files = await Promise.all(banner.items.map((i) => listQuestionFiles(supabase, i.assignmentId)));
+  const [progress, recent] = await Promise.all([
+    getMyProgress(supabase, auth.user?.id ?? ""),
+    listRecentlyMarked(supabase),
+  ]);
+  const solutions = await listMySolutions(supabase, recent.map((r) => r.assignmentId));
   await connection(); // request time: the clock below must not be prerendered
   const now = new Date();
   return (
@@ -32,6 +41,36 @@ export default async function StudentHome() {
           </ul>
         </section>
       )}
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold">My progress</h2>
+        <ProgressTiles progress={progress} />
+        <Link href="/progress" className="mt-3 inline-block text-sm underline">
+          See full history
+        </Link>
+      </section>
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold">Recently marked</h2>
+        {recent.length === 0 ? (
+          <p className="mt-3 text-black/70 dark:text-white/70">Nothing marked yet.</p>
+        ) : (
+          <ul className="mt-3 flex flex-col gap-3">
+            {recent.map((r) => (
+              <li key={r.assignmentId} className="rounded border border-black/15 p-3 dark:border-white/20">
+                <p className="font-medium">{`${r.title}, ${markText(r.mark ?? 0, r.maxMarks)}`}</p>
+                {r.feedback && <p className="mt-1 whitespace-pre-wrap text-sm">&ldquo;{r.feedback}&rdquo;</p>}
+                {solutions.has(r.assignmentId) && (
+                  <Link
+                    href={r.kind === "test" ? `/tests/${r.assignmentId}` : `/homework/${r.assignmentId}#solution`}
+                    className="mt-1 inline-block text-sm underline"
+                  >
+                    View solution
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }
