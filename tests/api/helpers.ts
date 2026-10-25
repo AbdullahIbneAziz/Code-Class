@@ -153,6 +153,8 @@ export async function cleanupTestUsers(): Promise<void> {
   for (const [bucket, paths] of byBucket) {
     const { error } = await admin.storage.from(bucket).remove(paths);
     if (error) errors.push(`remove ${bucket}: ${error.message}`);
+    const { error: rErr } = await admin.from("replaced_files").delete().eq("bucket", bucket).in("object_path", paths);
+    if (rErr) errors.push(`replaced_files ${bucket}: ${rErr.message}`);
   }
   uploaded.length = 0;
   for (const title of lectureTitles.splice(0)) {

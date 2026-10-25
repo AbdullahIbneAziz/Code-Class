@@ -7,6 +7,7 @@ import {
   cleanupTestUsers,
   fileOfSize,
   makeTestUser,
+  trackLecture,
   trackObject,
   uuid,
   type TestUser,
@@ -128,10 +129,53 @@ describe("storage policies", () => {
     const sPath = `${openHw}/${uuid()}.pdf`;
     expect((await put(teacher, "questions", qPath, fileOfSize(10))).error).toBeNull();
     expect((await put(teacher, "solutions", sPath, fileOfSize(10))).error).toBeNull();
+    const att = await teacher.client.rpc("attach_file", {
+      p_target: "question", p_parent_id: openHw, p_object_path: qPath, p_original_name: "t_q.pdf",
+    });
+    expect(att.error).toBeNull();
     expect((await s1.client.storage.from("questions").createSignedUrl(qPath, 60)).error).toBeNull();
     // deadline not passed => solution closed for students
     expect((await s2.client.storage.from("solutions").createSignedUrl(sPath, 60)).error).not.toBeNull();
     expect((await teacher.client.storage.from("solutions").createSignedUrl(sPath, 60)).error).toBeNull();
+  });
+
+  it("students cannot sign never-attached, replaced or deleted-lecture objects", async () => {
+    // never attached
+    const loose = `${openHw}/${uuid()}.pdf`;
+    expect((await put(teacher, "questions", loose, fileOfSize(10))).error).toBeNull();
+    expect((await s1.client.storage.from("questions").createSignedUrl(loose, 60)).error).not.toBeNull();
+
+    // attached, then replaced
+    const oldQ = `${openHw}/${uuid()}.pdf`;
+    const newQ = `${openHw}/${uuid()}.pdf`;
+    expect((await put(teacher, "questions", oldQ, fileOfSize(10))).error).toBeNull();
+    expect((await put(teacher, "questions", newQ, fileOfSize(10))).error).toBeNull();
+    const att = await teacher.client.rpc("attach_file", {
+      p_target: "question", p_parent_id: openHw, p_object_path: oldQ, p_original_name: "t_old.pdf",
+    });
+    expect(att.error).toBeNull();
+    expect((await s1.client.storage.from("questions").createSignedUrl(oldQ, 60)).error).toBeNull();
+    const rep = await teacher.client.rpc("replace_file", {
+      p_target: "question", p_file_id: att.data, p_object_path: newQ, p_original_name: "t_new.pdf",
+    });
+    expect(rep.error).toBeNull();
+    expect((await s1.client.storage.from("questions").createSignedUrl(oldQ, 60)).error).not.toBeNull();
+    expect((await s1.client.storage.from("questions").createSignedUrl(newQ, 60)).error).toBeNull();
+
+    // lecture: live, then deleted
+    const lec = await teacher.client.rpc("create_lecture", { p_title: "t_live_rows", p_description: "" });
+    expect(lec.error).toBeNull();
+    trackLecture(lec.data as string);
+    const lPath = `${lec.data}/${uuid()}.pdf`;
+    expect((await put(teacher, "lectures", lPath, fileOfSize(10))).error).toBeNull();
+    const la = await teacher.client.rpc("attach_file", {
+      p_target: "lecture", p_parent_id: lec.data, p_object_path: lPath, p_original_name: "t_l.pdf",
+    });
+    expect(la.error).toBeNull();
+    expect((await s1.client.storage.from("lectures").createSignedUrl(lPath, 60)).error).toBeNull();
+    const del = await teacher.client.rpc("delete_lecture", { p_lecture_id: lec.data });
+    expect(del.error).toBeNull();
+    expect((await s1.client.storage.from("lectures").createSignedUrl(lPath, 60)).error).not.toBeNull();
   });
 
   it("teacher cannot delete a stored object", async () => {
