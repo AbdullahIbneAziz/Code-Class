@@ -133,7 +133,11 @@ test("deadline passes while the page is open: the upload is refused with the on-
 });
 
 test("late submission shows the late lock note and no upload form", async ({ page }) => {
-  const hw = await seed({ due_at: new Date(Date.now() - 2 * HOUR).toISOString() });
+  const hw = await seed({
+    visible_from: new Date(Date.now() - 6 * HOUR).toISOString(),
+    opens_at: new Date(Date.now() - 5 * HOUR).toISOString(),
+    due_at: new Date(Date.now() - 2 * HOUR).toISOString(),
+  });
   await adminSeedSubmission(hw.id, student.id, { submittedAt: new Date(Date.now() - HOUR).toISOString() });
   await open(page, hw.id);
   await expect(page.getByText("Your late submission is locked because the deadline has passed.")).toBeVisible();
